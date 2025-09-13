@@ -134,7 +134,7 @@ export default function TwoCreateGame({
   const categoryTabs = [
     { id: "heart", icon: "fa-solid fa-heart" },
     { id: "recent", icon: "fa-solid fa-list-ul" },
-    { id: "all", icon: "fa-solid fa-grip" },
+    // { id: "all", icon: "fa-solid fa-grip" },
   ];
 
   useEffect(() => {

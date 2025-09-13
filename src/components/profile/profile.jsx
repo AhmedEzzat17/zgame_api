@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const Profile = ({ user }) => {
   const navigate = useNavigate();
@@ -125,10 +125,12 @@ const Profile = ({ user }) => {
             <p className="profile-phone">{userData.phone || 'لم يتم إضافة رقم هاتف'}</p>
 
             {/* Games Button */}
+            <Link to="/MyGames">
             <button className="games-btn">
               <i className="fas fa-gamepad"></i>
               ألعابي
             </button>
+            </Link>
           </div>
 
           {/* Right Side - Profile Information */}

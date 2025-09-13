@@ -209,7 +209,7 @@ const CountryShow = () => {
                         <th>كود الهاتف</th>
                         <th>العملة</th>
                         <th>رمز العملة</th>
-                        <th>الحالة</th>
+                        {/* <th>الحالة</th> */}
                         <th>الإجراءات</th>
                       </tr>
                     </thead>
@@ -244,7 +244,7 @@ const CountryShow = () => {
                             <td>{country.phone_code}</td>
                             <td>{country.currency || "-"}</td>
                             <td>{country.currency_symbol || "-"}</td>
-                            <td>
+                            {/* <td>
                               <button
                                 onClick={() =>
                                   toggleStatus(country.id, country.is_active)
@@ -257,7 +257,7 @@ const CountryShow = () => {
                               >
                                 {country.is_active ? "مفعل" : "معطل"}
                               </button>
-                            </td>
+                            </td> */}
                             <td>
                               <div className="d-flex justify-content-center gap-2">
                                 <Link

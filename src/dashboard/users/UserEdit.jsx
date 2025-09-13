@@ -112,7 +112,7 @@ export default function UserEdit() {
               <div
                 className="card-header rounded-top-4"
                 style={{
-                  background: "linear-gradient(90deg, #4e54c8, #8f94fb)",
+                  background: "#2c3e50",
                   color: "#fff",
                 }}
               >

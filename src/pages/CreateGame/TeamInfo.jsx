@@ -1,18 +1,55 @@
 // ===== TeamInfoV2.jsx =====
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 export default function TeamInfoV2() {
-  const [gameName, setGameName] = useState("");
-  const [team1Name, setTeam1Name] = useState("");
-  const [team1Players, setTeam1Players] = useState(1);
-  const [team2Name, setTeam2Name] = useState("");
-  const [team2Players, setTeam2Players] = useState(1);
+  const [gameName, setGameName] = useState(() => {
+    const stored = localStorage.getItem("gameInfo");
+    return stored ? JSON.parse(stored).gameName || "" : "";
+  });
+  const [team1Name, setTeam1Name] = useState(() => {
+    const stored = localStorage.getItem("gameInfo");
+    return stored ? JSON.parse(stored).team1Name || "" : "";
+  });
+  const [team1Players, setTeam1Players] = useState(() => {
+    const stored = localStorage.getItem("gameInfo");
+    return stored ? JSON.parse(stored).team1Count || 1 : 1;
+  });
+  const [team2Name, setTeam2Name] = useState(() => {
+    const stored = localStorage.getItem("gameInfo");
+    return stored ? JSON.parse(stored).team2Name || "" : "";
+  });
+  const [team2Players, setTeam2Players] = useState(() => {
+    const stored = localStorage.getItem("gameInfo");
+    return stored ? JSON.parse(stored).team2Count || 1 : 1;
+  });
   const [errors, setErrors] = useState({});
+
+  // Save to localStorage whenever data changes
+  useEffect(() => {
+    const gameInfo = {
+      gameName,
+      team1Name,
+      team2Name,
+      team1Count: team1Players,
+      team2Count: team2Players,
+      team1Score: 0,
+      team2Score: 0
+    };
+    localStorage.setItem("gameInfo", JSON.stringify(gameInfo));
+  }, [gameName, team1Name, team2Name, team1Players, team2Players]);
 
   const validateForm = () => {
     const newErrors = {};
-    if (!gameName.trim() || team1Name.trim().length < 3) {
+    
+    // Check if 6 categories are selected
+    const selectedItems = localStorage.getItem("selectedItems");
+    const selected = selectedItems ? JSON.parse(selectedItems) : [];
+    if (selected.length !== 6) {
+      newErrors.categories = "يجب اختيار 6 فئات بالضبط من الخيارات فى الأعلى ";
+    }
+    
+    if (!gameName.trim() || gameName.trim().length < 3) {
       newErrors.gameName = "الرجاء إدخال اسم اللعبة";
     }
     if (!team1Name.trim() || team1Name.trim().length < 3) {
@@ -36,13 +73,83 @@ export default function TeamInfoV2() {
   const handleClick = (e) => {
     if (!validateForm()) {
       e.preventDefault(); // يمنع الانتقال
+      return;
     }
+    
+    // فحص إذا كانت الأسماء نفسها للاحتفاظ بالتقدم
+    const existingGameData = localStorage.getItem("completeGameData");
+    let shouldKeepProgress = false;
+    let existingData = null;
+    
+    if (existingGameData) {
+      try {
+        existingData = JSON.parse(existingGameData);
+        // فحص إذا كانت الأسماء متطابقة
+        if (existingData.gameInfo && 
+            existingData.gameInfo.team1Name === team1Name && 
+            existingData.gameInfo.team2Name === team2Name &&
+            existingData.gameInfo.gameName === gameName) {
+          shouldKeepProgress = true;
+          console.log("🔄 تم العثور على تقدم سابق بنفس الأسماء - سيتم الاحتفاظ بالتقدم");
+        } else {
+          console.log("🆕 أسماء مختلفة - سيتم البدء من جديد");
+        }
+      } catch (error) {
+        console.log("❌ خطأ في قراءة البيانات السابقة:", error);
+      }
+    }
+    
+    // Save complete game data to localStorage
+    const selectedItems = localStorage.getItem("selectedItems");
+    const selected = selectedItems ? JSON.parse(selectedItems) : [];
+    
+    const completeGameData = {
+      categories: selected,
+      gameInfo: {
+        gameName,
+        team1Name,
+        team2Name,
+        team1Count: team1Players,
+        team2Count: team2Players,
+        // إذا كانت الأسماء نفسها، احتفظ بالنقاط والدور، وإلا ابدأ من جديد
+        team1Score: shouldKeepProgress ? (existingData.gameInfo.team1Score || 0) : 0,
+        team2Score: shouldKeepProgress ? (existingData.gameInfo.team2Score || 0) : 0,
+        currentTurn: shouldKeepProgress ? (existingData.gameInfo.currentTurn || 1) : 1
+      },
+      // إذا كانت الأسماء نفسها، احتفظ بالأسئلة المستخدمة، وإلا ابدأ من جديد
+      usedQuestions: shouldKeepProgress ? (existingData.usedQuestions || []) : [],
+      timestamp: new Date().toISOString(),
+      isResumed: shouldKeepProgress // علامة للإشارة إلى أنه تم استكمال اللعبة
+    };
+    
+    // إذا لم نحتفظ بالتقدم، امسح البيانات القديمة
+    if (!shouldKeepProgress) {
+      localStorage.removeItem("usedQuestions");
+      localStorage.removeItem("currentQuestion");
+    }
+    
+    localStorage.setItem("completeGameData", JSON.stringify(completeGameData));
+    console.log(shouldKeepProgress ? "🎮 تم استكمال اللعبة بالتقدم السابق:" : "🎮 تم بدء لعبة جديدة:", completeGameData);
   };
 
   return (
     <div className="team-wrap" dir="rtl">
       <form className="team-card" noValidate>
         <h1 className="team-title">حدد معلومات الفرق</h1>
+        
+        {/* Show categories validation error */}
+        {errors.categories && (
+          <div className="error-text" style={{
+            backgroundColor: '#f8d7da',
+            color: '#721c24',
+            padding: '10px',
+            borderRadius: '5px',
+            marginBottom: '15px',
+            textAlign: 'center'
+          }}>
+            {errors.categories}
+          </div>
+        )}
 
         {/* اسم اللعبة */}
         <div className="field">

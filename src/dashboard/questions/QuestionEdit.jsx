@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import QuestionsService from "../../services/questionsservice";
+import CategoryService from "../../services/Categorieservice";
 import { toast } from "react-toastify";
 
 const QuestionEdit = () => {
@@ -16,7 +17,7 @@ const QuestionEdit = () => {
     option_d: "",
     correct_answer: [],
     points: 100,
-    level: "easy",
+    level: "easy", // Uncomment this - it's required
     question_media: null,
     media_mime: "",
     is_active: true,
@@ -97,7 +98,7 @@ const QuestionEdit = () => {
         option_d: question.option_d || "",
         correct_answer: Array.isArray(correctAnswer) ? correctAnswer : [correctAnswer],
         points: question.points || 100,
-        level: question.level || "easy",
+        level: question.level || "easy", // Uncomment this
         media_mime: question.media_mime || "",
         is_active: question.is_active,
       });
@@ -199,6 +200,10 @@ const QuestionEdit = () => {
       newErrors.points = "النقاط يجب أن تكون أكبر من صفر";
     }
 
+    if (!formData.level) { // Add level validation
+      newErrors.level = "المستوى مطلوب";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -217,17 +222,33 @@ const QuestionEdit = () => {
       formDataToSend.append("category_id", formData.category_id);
       formDataToSend.append("type", formData.type);
       formDataToSend.append("question_text", formData.question_text);
-      formDataToSend.append("correct_answer", JSON.stringify(formData.correct_answer));
+      
+      // Handle correct_answer based on question type - match QuestionCreate format
+      if (formData.type === "mcq") {
+        formDataToSend.append("correct_answer", JSON.stringify(formData.correct_answer));
+      } else {
+        // For text, number, and media types, send as indexed array like in QuestionCreate
+        const correctAnswerArray = Array.isArray(formData.correct_answer) 
+          ? formData.correct_answer 
+          : [formData.correct_answer];
+        
+        correctAnswerArray.forEach((answer, index) => {
+          if (answer !== null && answer !== undefined && answer !== "") {
+            formDataToSend.append(`correct_answer[${index}]`, String(answer));
+          }
+        });
+      }
+      
       formDataToSend.append("points", formData.points);
       formDataToSend.append("level", formData.level);
       formDataToSend.append("is_active", formData.is_active ? 1 : 0);
 
       // Add MCQ options if type is mcq
       if (formData.type === "mcq") {
-        formDataToSend.append("option_a", formData.option_a);
-        formDataToSend.append("option_b", formData.option_b);
-        formDataToSend.append("option_c", formData.option_c);
-        formDataToSend.append("option_d", formData.option_d);
+        formDataToSend.append("option_a", formData.option_a || "");
+        formDataToSend.append("option_b", formData.option_b || "");
+        formDataToSend.append("option_c", formData.option_c || "");
+        formDataToSend.append("option_d", formData.option_d || "");
       }
 
       // Add media mime type if provided
@@ -240,9 +261,9 @@ const QuestionEdit = () => {
       const userId = user?.id || user?.user_id || 1;
       formDataToSend.append("user_add_id", userId);
 
-      // Add media file if it's a new file
-      if (formData.question_media instanceof File) {
-        formDataToSend.append("question_media", formData.question_media);
+      // Add media file if provided - match QuestionCreate field name
+      if (formData.question_media && formData.question_media instanceof File) {
+        formDataToSend.append("question_media_url", formData.question_media, formData.question_media.name);
       }
 
       // If media was removed
@@ -271,7 +292,7 @@ const QuestionEdit = () => {
         option_d: formData.option_d.trim(),
         correct_answer: formData.correct_answer,
         points: parseInt(formData.points),
-        level: formData.level,
+        level: formData.level, // Uncomment this
         is_active: formData.is_active ? 1 : 0,
         question_media_url: response.data?.question_media_url || currentMedia,
         media_mime: formData.media_mime,
@@ -293,14 +314,12 @@ const QuestionEdit = () => {
     } catch (error) {
       console.error("Error updating question:", error);
       console.log("Server validation errors:", error.response?.data?.errors);
-
-      const errorMessage =
-        error.response?.data?.message || "حدث خطأ أثناء تحديث السؤال";
-      toast.error(errorMessage);
-
-      if (error.response?.data?.errors) {
-        setErrors(error.response.data.errors);
+      console.log("Full error response:", error.response?.data);
+      if (error.response?.data?.errors?.correct_answer) {
+        console.log("Correct answer error details:", error.response.data.errors.correct_answer);
       }
+      setErrors(error.response?.data?.errors || {});
+      toast.error("حدث خطأ أثناء تحديث السؤال");
     } finally {
       setSaving(false);
     }
@@ -375,7 +394,13 @@ const QuestionEdit = () => {
       );
     }
 
-    const mediaUrl = preview.startsWith("http") ? preview : `https://appgames.fikriti.com/${preview}`;
+    // Handle different URL formats
+    let mediaUrl = preview;
+    if (!preview.startsWith("http") && !preview.startsWith("data:")) {
+      // Remove leading slash if present and construct proper URL
+      const cleanPath = preview.startsWith('/') ? preview.substring(1) : preview;
+      mediaUrl = `https://appgames.fikriti.com/${cleanPath}`;
+    }
 
     if (formData.media_mime && formData.media_mime.startsWith('image/')) {
       return (
@@ -383,6 +408,11 @@ const QuestionEdit = () => {
           src={mediaUrl}
           alt="معاينة الوسائط"
           className="img-fluid h-100 w-100 object-fit-cover"
+          onError={(e) => {
+            console.error('Image load error:', e.target.src);
+            e.target.style.display = 'none';
+            e.target.nextSibling.style.display = 'flex';
+          }}
         />
       );
     }
@@ -410,10 +440,10 @@ const QuestionEdit = () => {
       <div className="row justify-content-center">
         <div className="col-md-10">
           <div className="card shadow-lg border-0">
-            <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div className="card-header text-white d-flex justify-content-between align-items-center" style={{ backgroundColor: "#2c3e50" }}>
               <h4 className="mb-0">تعديل السؤال</h4>
               <button
-                className="btn btn-light btn-sm text-dark"
+                className="btn btn-light btn-sm text-light"
                 onClick={() => navigate(-1)}
               >
                 <i className="bi bi-arrow-right me-1"></i> رجوع
@@ -563,27 +593,28 @@ const QuestionEdit = () => {
                     <label htmlFor="points" className="form-label">
                       النقاط <span className="text-danger">*</span>
                     </label>
-                    <input
-                      type="number"
-                      className={`form-control ${errors.points ? "is-invalid" : ""}`}
+                    <select
+                      className={`form-select ${errors.points ? "is-invalid" : ""}`}
                       id="points"
                       name="points"
                       value={formData.points}
                       onChange={handleChange}
-                      min="1"
-                      placeholder="100"
-                    />
+                    >
+                      <option value="200">200</option>
+                      <option value="400">400</option>
+                      <option value="600">600</option>
+                    </select>
                     {errors.points && (
                       <div className="invalid-feedback">{errors.points}</div>
                     )}
                   </div>
 
-                  <div className="col-md-4 mb-3">
+                  {/* <div className="col-md-4 mb-3">
                     <label htmlFor="level" className="form-label">
-                      المستوى
+                      المستوى <span className="text-danger">*</span>
                     </label>
                     <select
-                      className="form-select"
+                      className={`form-select ${errors.level ? "is-invalid" : ""}`}
                       id="level"
                       name="level"
                       value={formData.level}
@@ -593,9 +624,12 @@ const QuestionEdit = () => {
                       <option value="medium">متوسط</option>
                       <option value="hard">صعب</option>
                     </select>
-                  </div>
+                    {errors.level && (
+                      <div className="invalid-feedback">{errors.level}</div>
+                    )}
+                  </div> */}
 
-                  <div className="col-md-4 mb-3 d-flex align-items-end">
+                  {/* <div className="col-md-4 mb-3 d-flex align-items-end">
                     <div className="form-check form-switch">
                       <input
                         className="form-check-input"
@@ -610,7 +644,7 @@ const QuestionEdit = () => {
                         {formData.is_active ? "مفعل" : "معطل"}
                       </label>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
 
                 <div className="mb-4">
@@ -639,7 +673,7 @@ const QuestionEdit = () => {
                             onClick={handleRemoveMedia}
                             disabled={!currentMedia}
                           >
-                            <i className="bi bi-trash"></i>
+                            <i className="bi bi-trash" style={{ color: "#fff" }}></i>
                           </button>
                         )}
                       </div>

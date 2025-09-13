@@ -18,6 +18,7 @@ import GameBoard from "./pages/GameBoard/GameBoard.jsx";
 import TheGame from "./pages/TheGame/TheGame.jsx";
 import Dashboard from "./dashboard/dashboard.jsx"; // تعديل الاسم بحرف كبير
 import Profile from "./components/profile/profile.jsx";
+import MyGames from "./components/myGames/myGames.jsx";
 
 function AppContent() {
   return (
@@ -115,6 +116,13 @@ function AppContent() {
           <>
             <Navbar />
             <Profile />
+            <Footer />
+          </>
+        } />
+        <Route path="/MyGames" element={
+          <>
+            <Navbar />
+            <MyGames />
             <Footer />
           </>
         } />

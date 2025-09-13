@@ -16,7 +16,6 @@ const QuestionCreate = () => {
     correct_answer: [],
     points: 100,
     level: "easy",
-    // question_media: null,
     question_media_url: null,
     media_mime: "",
     is_active: true,
@@ -89,12 +88,11 @@ const QuestionCreate = () => {
       const file = files[0];
       
       if (file) {
-        // Set the actual file object
+        // Set the actual file object to question_media_url
         setFormData((prev) => ({ 
           ...prev, 
-          [name]: file,
-          media_mime: file.type,
-          question_media_url: "" // Reset URL when new file is selected
+          question_media_url: file,
+          media_mime: file.type
         }));
 
         // Create preview
@@ -105,9 +103,8 @@ const QuestionCreate = () => {
         // Clear file data
         setFormData((prev) => ({ 
           ...prev, 
-          [name]: null,
-          media_mime: "",
-          question_media_url: ""
+          question_media_url: null,
+          media_mime: ""
         }));
         setPreview("");
       }
@@ -238,7 +235,7 @@ const QuestionCreate = () => {
         correctAnswerFormatted = formData.correct_answer;
       }
 
-      const baseData = {
+      const questionData = {
         category_id: parseInt(formData.category_id),
         type: formData.type,
         question_text: formData.question_text.trim(),
@@ -250,23 +247,23 @@ const QuestionCreate = () => {
 
       // Add MCQ options if type is mcq
       if (formData.type === "mcq") {
-        baseData.option_a = formData.option_a.trim();
-        baseData.option_b = formData.option_b.trim();
-        if (formData.option_c.trim()) baseData.option_c = formData.option_c.trim();
-        if (formData.option_d.trim()) baseData.option_d = formData.option_d.trim();
+        questionData.option_a = formData.option_a.trim();
+        questionData.option_b = formData.option_b.trim();
+        if (formData.option_c.trim()) questionData.option_c = formData.option_c.trim();
+        if (formData.option_d.trim()) questionData.option_d = formData.option_d.trim();
       }
 
-      console.log("البيانات قبل الإرسال:", baseData);
+      console.log("البيانات قبل الإرسال:", questionData);
       console.log("correct_answer المنسق:", correctAnswerFormatted);
 
       let response;
       
-      if (formData.question_media && formData.question_media instanceof File) {
+      if (formData.question_media_url && formData.question_media_url instanceof File) {
         // Create FormData for file upload
         const formDataToSend = new FormData();
         
         // Add all base data fields
-        Object.entries(baseData).forEach(([key, value]) => {
+        Object.entries(questionData).forEach(([key, value]) => {
           if (value !== null && value !== undefined) {
             formDataToSend.append(key, value);
           }
@@ -282,7 +279,7 @@ const QuestionCreate = () => {
         }
         
         // Add the file - this is the key part for file handling
-        formDataToSend.append("question_media", formData.question_media, formData.question_media.name);
+        formDataToSend.append("question_media_url", formData.question_media_url, formData.question_media_url.name);
         
         // Add media mime type
         if (formData.media_mime) {
@@ -631,24 +628,26 @@ const QuestionCreate = () => {
                     <label htmlFor="points" className="form-label">
                       النقاط <span className="text-danger">*</span>
                     </label>
-                    <input
-                      type="number"
-                      className={`form-control ${errors.points ? "is-invalid" : ""}`}
+                    <select
+                      className={`form-select ${errors.points ? "is-invalid" : ""}`}
                       id="points"
                       name="points"
                       value={formData.points}
                       onChange={handleChange}
-                      min="1"
-                      placeholder="100"
-                    />
+                    >
+                      <option value="200">200</option>
+                      <option value="400">400</option>
+                      <option value="600">600</option>
+                    </select>
                     {errors.points && (
                       <div className="invalid-feedback">{errors.points}</div>
                     )}
                   </div>
+                </div>
 
-                  <div className="col-md-4 mb-3">
+                  {/* <div className="col-md-4 mb-3">
                     <label htmlFor="level" className="form-label">
-                      المستوى
+                    المستوى
                     </label>
                     <select
                       className="form-select"
@@ -656,12 +655,14 @@ const QuestionCreate = () => {
                       name="level"
                       value={formData.level}
                       onChange={handleChange}
-                    >
+                      >
                       <option value="easy">سهل</option>
                       <option value="medium">متوسط</option>
                       <option value="hard">صعب</option>
-                    </select>
-                  </div>
+                      </select> 
+                      */}
+
+                {/* <div className="row">
 
                   <div className="col-md-4 mb-3 d-flex align-items-end">
                     <div className="form-check form-switch">
@@ -679,30 +680,14 @@ const QuestionCreate = () => {
                       </label>
                     </div>
                   </div>
-                </div>
+                </div> */}
 
                 <div className="mb-4">
                   <label htmlFor="question_media" className="form-label">
                     ملف الوسائط (اختياري)
                   </label>
                   
-                  {/* Media URL input option */}
-                  <div className="mb-3">
-                    <label htmlFor="question_media_url" className="form-label">
-                      أو رابط الملف
-                    </label>
-                    <input
-                      type="url"
-                      className="form-control"
-                      id="question_media_url"
-                      name="question_media_url"
-                      value={formData.question_media_url}
-                      onChange={handleChange}
-                      placeholder="https://example.com/media.jpg"
-                    />
-                    <div className="form-text">يمكنك إدخال رابط مباشر للملف بدلاً من رفع ملف</div>
-                  </div>
-
+                
                   {/* File upload and preview */}
                   <div className="d-flex align-items-start gap-4">
                     <div
@@ -715,23 +700,23 @@ const QuestionCreate = () => {
                     <div className="flex-grow-1">
                       <input
                         type="file"
-                        className={`form-control ${errors.question_media ? "is-invalid" : ""}`}
+                        className={`form-control ${errors.question_media_url ? "is-invalid" : ""}`}
                         id="question_media"
-                        name="question_media"
+                        name="question_media_url"
                         onChange={handleChange}
                         accept="image/*,audio/*,video/*"
                       />
                       <div className="form-text">
                         يمكن رفع صور، صوت، أو فيديو (أو استخدم الرابط أعلاه)
                       </div>
-                      {formData.question_media && (
+                      {formData.question_media_url && (
                         <div className="small text-info mt-2">
                           <i className="bi bi-file-earmark-check me-1"></i>
-                          تم اختيار الملف: {formData.question_media.name}
+                          تم اختيار الملف: {formData.question_media_url.name}
                         </div>
                       )}
-                      {errors.question_media && (
-                        <div className="invalid-feedback">{errors.question_media}</div>
+                      {errors.question_media_url && (
+                        <div className="invalid-feedback">{errors.question_media_url}</div>
                       )}
                     </div>
                   </div>

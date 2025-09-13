@@ -284,10 +284,10 @@ const QuestionShow = () => {
                         <th>#</th>
                         <th>نص السؤال</th>
                         <th>النوع</th>
-                        <th>المستوى</th>
+                        {/* <th>المستوى</th> */}
                         <th>النقاط</th>
                         <th>الوسائط</th>
-                        <th>الحالة</th>
+                        {/* <th>الحالة</th> */}
                         <th>الإجراءات</th>
                       </tr>
                     </thead>
@@ -311,7 +311,7 @@ const QuestionShow = () => {
                                 {getQuestionTypeLabel(question.type)}
                               </span>
                             </td>
-                            <td>
+                            {/* <td>
                               <span className={`badge ${
                                 question.level === 'easy' ? 'bg-success' :
                                 question.level === 'medium' ? 'bg-warning' :
@@ -319,10 +319,10 @@ const QuestionShow = () => {
                               }`}>
                                 {getLevelLabel(question.level)}
                               </span>
-                            </td>
+                            </td> */}
                             <td>{question.points}</td>
                             <td>{renderQuestionMedia(question)}</td>
-                            <td>
+                            {/* <td>
                               <button
                                 onClick={() =>
                                   toggleStatus(question.id, question.is_active)
@@ -335,7 +335,7 @@ const QuestionShow = () => {
                               >
                                 {question.is_active ? "مفعل" : "معطل"}
                               </button>
-                            </td>
+                            </td> */}
                             <td>
                               <div className="d-flex justify-content-center gap-2">
                                 <Link

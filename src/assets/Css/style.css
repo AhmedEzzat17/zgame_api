@@ -2639,6 +2639,9 @@ label {
   font-size: 18px;
   transition: background 0.2s ease, transform 0.1s ease;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .score-box .minus:hover,
@@ -2692,7 +2695,7 @@ label {
 }
 
 .icon-colored {
-  background: var(--accent);
+  background: #c4c3c3;
   color: #fff;
 }
 
@@ -2704,6 +2707,206 @@ label {
 
 .helpers-inline .icon:hover:not(.icon-disabled) {
   transform: scale(1.1);
+}
+
+/* Used questions styling */
+.pill.pill-used {
+  background: #666 !important;
+  color: #999 !important;
+  cursor: not-allowed !important;
+  position: relative;
+  overflow: hidden;
+  transform: none !important;
+  background-image: none !important;
+  opacity: 0.7 !important;
+}
+
+.pill.pill-used::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0.1) 5px,
+    rgba(0, 0, 0, 0.2) 5px,
+    rgba(0, 0, 0, 0.2) 10px
+  );
+  pointer-events: none;
+}
+
+.pill.pill-used .value-text {
+  position: relative;
+  text-decoration-thickness: 2px;
+  color: #ccc !important;
+}
+
+.pill.pill-used:hover {
+  transform: none !important;
+  filter: brightness(0.8);
+  cursor: not-allowed !important;
+}
+
+/* Hole icon states */
+.icon-colored {
+  background: #ff6b35 !important;
+  color: #fff !important;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.icon-disabled {
+  background: #cccccc !important;
+  color: #888888 !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+  position: relative;
+  overflow: hidden;
+}
+
+.icon-disabled::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.1),
+    rgba(0, 0, 0, 0.1) 3px,
+    rgba(0, 0, 0, 0.2) 3px,
+    rgba(0, 0, 0, 0.2) 6px
+  );
+  pointer-events: none;
+}
+
+/* Hole Modal Styles */
+.hole-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.hole-modal {
+  background: #fff;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.hole-modal-header {
+  background: linear-gradient(135deg, red 0%, orange 100%);
+  color: white;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hole-modal-header h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s ease;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.hole-modal-content {
+  padding: 30px;
+  text-align: right;
+  direction: rtl;
+}
+
+.hole-modal-content p {
+  font-size: 18px;
+  margin-bottom: 15px;
+  color: #333;
+  font-weight: 600;
+}
+
+.hole-modal-content ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.hole-modal-content li {
+  background: #f8f9fa;
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 8px;
+  border-right: 4px solid red;
+  font-size: 16px;
+  color: #555;
+}
+
+.hole-modal-actions {
+  padding: 20px 30px 30px;
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.cancel-btn, .activate-btn {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.cancel-btn {
+  background: #6c757d;
+  color: white;
+}
+
+.cancel-btn:hover {
+  background: #5a6268;
+  transform: translateY(-2px);
+}
+
+.activate-btn {
+  background: linear-gradient(135deg, red 0%, orange 100%);
+  color: white;
+}
+
+.activate-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
 }
 
 @media (max-width: 930px) {
@@ -3084,6 +3287,191 @@ label {
   /* أخضر */
   color: #fff !important;
   border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Winner Modal Styles */
+.winner-modal {
+  background: #fff;
+  padding: 30px;
+  border-radius: 20px;
+  position: relative;
+  text-align: center;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  direction: rtl;
+}
+
+.winner-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 15px;
+}
+
+.winner-modal-header h2 {
+  color: #F95C32;
+  font-size: 1.8rem;
+  margin: 0;
+  background: linear-gradient(to right, red, orange);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.winner-modal .close-btn {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.winner-modal .close-btn:hover {
+  background: #f0f0f0;
+  color: #F95C32;
+}
+
+.winner-modal-content {
+  margin: 20px 0;
+}
+
+.winner-icon, .tie-icon {
+  font-size: 4rem;
+  margin-bottom: 15px;
+}
+
+.winner-modal-content h3 {
+  color: #333;
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+}
+
+.winner-modal-content p {
+  color: #666;
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+.teams-scores {
+  display: flex;
+  justify-content: space-around;
+  gap: 20px;
+  margin: 20px 0;
+}
+
+.team-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px;
+  border-radius: 10px;
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  min-width: 120px;
+}
+
+.team-result.winner {
+  background: linear-gradient(135deg, rgba(255, 0, 0, 0.1), rgba(255, 165, 0, 0.1));
+  border-color: #F95C32;
+}
+
+.team-result.loser {
+  background: #f8f9fa;
+  border-color: #dee2e6;
+}
+
+.team-name {
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 5px;
+  font-size: 1rem;
+}
+
+.team-score {
+  color: #F95C32;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.winner-modal-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 25px;
+}
+
+.winner-modal-actions button {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 25px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.winner-modal-actions .cancel-btn {
+  background: #6c757d;
+  color: #fff;
+}
+
+.winner-modal-actions .cancel-btn:hover {
+  background: #5a6268;
+  transform: translateY(-2px);
+}
+
+.winner-modal-actions .activate-btn {
+  background: linear-gradient(to right, red, orange);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(249, 92, 50, 0.3);
+}
+
+.winner-modal-actions .activate-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(249, 92, 50, 0.4);
+}
+
+/* Responsive Design for Winner Modal */
+@media (max-width: 768px) {
+  .winner-modal {
+    width: 95%;
+    padding: 20px;
+  }
+  
+  .winner-modal-header h2 {
+    font-size: 1.5rem;
+  }
+  
+  .teams-scores {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .team-result {
+    min-width: auto;
+  }
+  
+  .winner-modal-actions {
+    flex-direction: column;
+  }
+  
+  .winner-modal-actions button {
+    min-width: auto;
+  }
 }
 
 /* العدّاد العلوي في المنتصف */
@@ -3747,4 +4135,387 @@ label {
 
 .profile-container::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, darkred, darkorange);
+}
+
+/* ###############################################################################################3 */
+/* My Games Component Styles - Based on Profile Design */
+.mygames11-container {
+  min-height: 100vh;
+  padding: 20px;
+  font-family: 'Cairo', sans-serif;
+  direction: rtl;
+}
+
+.mygames11-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+/* Header Section */
+.mygames11-header {
+  background: linear-gradient(135deg, red 0%, orange 100%);
+  padding: 40px;
+  text-align: center;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+/* الشكل الى بيلف ف الخلفيه  */
+/* .mygames11-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  animation: mygames11-float 6s ease-in-out infinite;
+}
+
+@keyframes mygames11-float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(180deg); }
+} */
+
+.mygames11-header h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 1;
+}
+
+.mygames11-header p {
+  font-size: 1.2rem;
+  margin: 0;
+  opacity: 0.9;
+  position: relative;
+  z-index: 1;
+}
+
+
+/* Games Grid */
+.mygames11-grid {
+  padding: 40px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 30px;
+  max-width: 100%;
+}
+
+/* Game Card */
+.mygames11-card {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+  border: 2px solid transparent;
+}
+
+.mygames11-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  border-color: orange;
+}
+
+/* Game Image */
+.mygames11-image {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.mygames11-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.mygames11-card:hover .mygames11-image img {
+  transform: scale(1.1);
+}
+
+.mygames11-overlay {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.mygames11-category {
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+
+.mygames11-difficulty {
+  color: white;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+
+/* Game Content */
+.mygames11-content {
+  padding: 25px;
+  display: grid;
+  justify-items: center;
+}
+
+.mygames11-title {
+  font-size: 2.5rem;
+    font-weight: 700;
+    text-align: center;
+    color: #333;
+    margin: 0 0 10px 0;
+    line-height: 1.3;
+}
+
+.mygames11-description {
+  color: #666;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+}
+
+/* Game Stats */
+.mygames11-stats {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 25px;
+  flex-wrap: wrap;
+}
+
+.mygames11-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.mygames11-stat-item i {
+  color: #4facfe;
+  font-size: 1rem;
+}
+
+/* Play Button */
+.mygames11-play-btn {
+  width: 100%;
+  background: linear-gradient(135deg, red 0%, orange 100%);
+  color: white;
+  border: none;
+  padding: 15px 25px;
+  border-radius: 15px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.mygames11-play-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+}
+
+.mygames11-play-btn i {
+  font-size: 1.2rem;
+}
+
+/* No Games State */
+.mygames11-no-games {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 80px 20px;
+  color: #666;
+}
+
+.mygames11-no-games-icon {
+  font-size: 4rem;
+  color: #ddd;
+  margin-bottom: 20px;
+}
+
+.mygames11-no-games h3 {
+  font-size: 1.8rem;
+  color: #333;
+  margin: 0 0 10px 0;
+}
+
+.mygames11-no-games p {
+  font-size: 1.1rem;
+  margin: 0 0 30px 0;
+}
+
+.mygames11-browse-games-btn {
+  background: linear-gradient(135deg, red 0%, orange 100%);
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 15px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mygames11-browse-games-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+}
+
+/* Responsive Design for My Games */
+@media (max-width: 1200px) {
+  .mygames11-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    padding: 30px;
+  }
+}
+
+@media (max-width: 768px) {
+  .mygames11-container {
+    padding: 15px;
+  }
+  
+  .mygames11-header {
+    padding: 30px 20px;
+  }
+  
+  .mygames11-header h1 {
+    font-size: 2.2rem;
+  }
+  
+  .mygames11-header p {
+    font-size: 1rem;
+  }
+  
+  .mygames11-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 20px;
+  }
+  
+  .mygames11-card {
+    margin: 0 auto;
+    max-width: 400px;
+  }
+  
+  .mygames11-stats {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mygames11-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .mygames11-grid {
+    padding: 15px;
+  }
+  
+  .mygames11-content {
+    padding: 20px;
+  }
+  
+  .mygames11-title {
+    font-size: 1.3rem;
+  }
+  
+  .mygames11-overlay {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+}
+
+/* Animation for cards entrance */
+.mygames11-card {
+  animation: mygames11-slideInUp 0.6s ease-out;
+}
+
+@keyframes mygames11-slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Stagger animation for multiple cards */
+.mygames11-card:nth-child(1) { animation-delay: 0.1s; }
+.mygames11-card:nth-child(2) { animation-delay: 0.2s; }
+.mygames11-card:nth-child(3) { animation-delay: 0.3s; }
+.mygames11-card:nth-child(4) { animation-delay: 0.4s; }
+.mygames11-card:nth-child(5) { animation-delay: 0.5s; }
+.mygames11-card:nth-child(6) { animation-delay: 0.6s; }
+
+/* Action Buttons */
+.mygames11-action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 40px;
+  margin-top: 20px;
+}
+
+.mygames11-new-game-btn,
+.mygames11-home-btn {
+  background: linear-gradient(135deg, red 0%, orange 100%);
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 200px;
+  justify-content: center;
+}
+
+.mygames11-new-game-btn:hover,
+.mygames11-home-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(255, 69, 0, 0.3);
+}
+
+.mygames11-new-game-btn i,
+.mygames11-home-btn i {
+  font-size: 1.2rem;
 }

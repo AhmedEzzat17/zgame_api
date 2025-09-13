@@ -252,10 +252,10 @@ const CountryEdit = () => {
       <div className="row justify-content-center">
         <div className="col-md-8">
           <div className="card shadow-lg border-0">
-            <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div className="card-header text-white d-flex justify-content-between align-items-center" style={{ backgroundColor: "#2c3e50" }}>
               <h4 className="mb-0">تعديل الدولة</h4>
               <button
-                className="btn btn-light btn-sm text-dark"
+                className="btn btn-light btn-sm text-light"
                 onClick={() => navigate(-1)}
               >
                 <i className="bi bi-arrow-right me-1"></i> رجوع
@@ -433,7 +433,7 @@ const CountryEdit = () => {
                             onClick={handleRemoveFlag}
                             disabled={!currentFlag}
                           >
-                            <i className="bi bi-trash"></i>
+                            <i className="bi bi-trash" style={{ color: "#fff" }}></i>
                           </button>
                         )}
                       </div>
