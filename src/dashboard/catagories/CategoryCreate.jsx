@@ -86,7 +86,6 @@ export default function CategoryCreate() {
       // Save to localStorage for future use
       localStorage.setItem("countries", JSON.stringify(validCountries));
     } catch (error) {
-      console.error("فشل في جلب الدول:", error);
       setCountries([]);
     }
   };
@@ -192,7 +191,6 @@ export default function CategoryCreate() {
         navigate("/Dashboard/categories");
       }, 1500);
     } catch (error) {
-      console.error("خطأ في الإرسال:", error);
       setIsSuccess(false);
 
       if (error.response?.data?.errors) {

@@ -37,7 +37,6 @@ const Profile = ({ user }) => {
         };
       }
     } catch (error) {
-      console.error('Error parsing user data:', error);
     }
     // Default values if no user data is found
     return {
@@ -64,10 +63,6 @@ const Profile = ({ user }) => {
   };
 
   const handleSave = () => {
-    console.log("حفظ البيانات:", {
-      phone: phoneNumber,
-      ...(isChangingPassword && passwordData)
-    });
     
     setIsEditing(false);
     setIsChangingPassword(false);

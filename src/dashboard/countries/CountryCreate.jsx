@@ -147,7 +147,6 @@ const CountryCreate = () => {
         user_add_id: userId,
       };
 
-      console.log("محاولة الإرسال:", baseData);
 
       let response;
       if (formData.flag) {
@@ -189,12 +188,10 @@ const CountryCreate = () => {
 
       navigate("/Dashboard/countries");
     } catch (error) {
-      console.error("خطأ في إضافة الدولة:", error);
 
       let errorMessage = "حدث خطأ أثناء إضافة الدولة";
 
       if (error.response?.status === 422 && error.response?.data?.errors) {
-        console.log("أخطاء التحقق:", error.response.data.errors);
         const firstError = Object.values(error.response.data.errors)[0];
         if (Array.isArray(firstError)) errorMessage = firstError[0];
         setErrors(error.response.data.errors);

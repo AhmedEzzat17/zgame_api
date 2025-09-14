@@ -7,33 +7,33 @@ import questionsService from "../../services/questionsservice";
 const defaultCategories = [
   {
     id: 1,
-    title: "نفط الكويت",
-    img: "images/zGame_All_Pages-_3_-removebg-preview.png",
+    title: "",
+    img: "#",
   },
   {
     id: 2,
-    title: "House of the Dragon",
-    img: "images/zGame_All_Pages-_3_-removebg-preview.png",
+    title: "",
+    img: "#",
   },
   {
     id: 3,
-    title: "دعایات",
-    img: "images/zGame_All_Pages-_3_-removebg-preview.png",
+    title: "#",
+    img: "#",
   },
   {
     id: 4,
-    title: "كنة الشام",
-    img: "images/zGame_All_Pages-_3_-removebg-preview.png",
+    title: "",
+    img: "#",
   },
   {
     id: 5,
-    title: "مرور الكويت",
-    img: "images/zGame_All_Pages-_3_-removebg-preview.png",
+    title: "",
+    img: "#",
   },
   {
     id: 6,
-    title: "مجمعات الكويت",
-    img: "images/zGame_All_Pages-_3_-removebg-preview.png",
+    title: "",
+    img: "#",
   },
 ];
 
@@ -64,12 +64,6 @@ export default function GameBoard() {
         // Save to localStorage
         localStorage.setItem("completeGameData", JSON.stringify(gameData));
         
-        console.log("💾 تم حفظ حالة اللعبة في localStorage:", {
-          team1Score,
-          team2Score,
-          holeUsed,
-          currentTeamUsingHole
-        });
       }
     }
   };
@@ -77,6 +71,11 @@ export default function GameBoard() {
   // Save scores to localStorage (kept for backward compatibility)
   const saveScoresToLocalStorage = (team1Score, team2Score) => {
     saveGameState(team1Score, team2Score);
+  };
+
+  // دالة لتحديد مفتاح localStorage حسب نوع اللعبة
+  const getUsedQuestionsKey = () => {
+    return isTournamentMode ? 'usedQuestionsTournament' : 'usedQuestions';
   };
 
   // دالة للتحقق من استخدام السؤال مسبقاً
@@ -90,14 +89,37 @@ export default function GameBoard() {
     setUsedQuestions(prev => {
       const newSet = new Set(prev);
       newSet.add(questionKey);
-      // Save to localStorage inside the state update to ensure it uses the latest state
-      localStorage.setItem('usedQuestions', JSON.stringify(Array.from(newSet)));
+      
+      // حفظ في localStorage حسب نوع اللعبة
+      const storageKey = getUsedQuestionsKey();
+      localStorage.setItem(storageKey, JSON.stringify(Array.from(newSet)));
+      
       
       // فحص إذا كانت جميع الأسئلة قد انتهت
       const totalQuestions = categories.length * values.length * 2; // 6 categories * 3 values * 2 sides
       if (newSet.size >= totalQuestions) {
         setGameFinished(true);
         setShowWinnerModal(true);
+        
+        // إذا كانت مباراة بطولة، حفظ الفائز تلقائياً
+        if (isTournamentMode && tournamentData) {
+          setTimeout(() => {
+            const winner = getWinner();
+            
+            // في حالة التعادل، لا نحفظ شيء
+            if (winner.type !== 'tie') {
+              const savedTournamentData = JSON.parse(localStorage.getItem("tournamentData") || "{}");
+              if (!savedTournamentData.winners) {
+                savedTournamentData.winners = {};
+              }
+              
+              // حفظ الفائز في المباراة الحالية
+              savedTournamentData.winners[tournamentData.matchKey] = winner.name;
+              localStorage.setItem("tournamentData", JSON.stringify(savedTournamentData));
+              
+            }
+          }, 100);
+        }
       }
       
       return newSet;
@@ -117,8 +139,12 @@ export default function GameBoard() {
 
   // دالة لإعادة تعيين اللعبة
   const resetGame = () => {
-    localStorage.removeItem('usedQuestions');
+    // حذف الأسئلة المستخدمة حسب نوع اللعبة
+    const storageKey = getUsedQuestionsKey();
+    localStorage.removeItem(storageKey);
     localStorage.removeItem('currentQuestion');
+    
+    
     setUsedQuestions(new Set());
     setScoreLeft(0);
     setScoreRight(0);
@@ -137,6 +163,75 @@ export default function GameBoard() {
     }
   };
 
+  // دالة للتعامل مع انتهاء مباراة البطولة
+  const handleTournamentMatchEnd = () => {
+    if (!isTournamentMode || !tournamentData) return;
+
+    const winner = getWinner();
+    
+    // في حالة التعادل، إعادة المباراة
+    if (winner.type === 'tie') {
+      alert("تعادل! سيتم إعادة المباراة مرة أخرى");
+      resetGame();
+      return;
+    }
+    
+    // تحديث بيانات البطولة بالفائز
+    const savedTournamentData = JSON.parse(localStorage.getItem("tournamentData") || "{}");
+    if (!savedTournamentData.winners) {
+      savedTournamentData.winners = {};
+    }
+    
+    // حفظ الفائز في المباراة الحالية - حفظ اسم الفائز مباشرة
+    savedTournamentData.winners[tournamentData.matchKey] = winner.name;
+    
+    localStorage.setItem("tournamentData", JSON.stringify(savedTournamentData));
+    
+
+    // تنظيف بيانات المباراة الحالية
+    localStorage.removeItem("currentTournamentMatch");
+    localStorage.removeItem("completeGameData");
+    localStorage.removeItem("usedQuestionsTournament"); // حذف أسئلة البطولة فقط
+    localStorage.removeItem("currentQuestion");
+    
+    // العودة لشجرة البطولة فوراً
+    navigate("/CreateChampionTwo");
+  };
+
+  // دالة للتحقق من انتهاء جميع الأسئلة
+  const areAllQuestionsFinished = () => {
+    const totalQuestions = categories.length * values.length * 2; // 6 categories * 3 values * 2 sides = 36
+    return usedQuestions.size >= totalQuestions;
+  };
+
+  // دالة للعودة للصفحة الرئيسية
+  const handleReturnToHome = () => {
+    // تنظيف جميع البيانات
+    const storageKey = getUsedQuestionsKey();
+    localStorage.removeItem(storageKey);
+    localStorage.removeItem('currentQuestion');
+    localStorage.removeItem('completeGameData');
+    localStorage.removeItem('selectedItems');
+    
+    
+    // العودة للصفحة الرئيسية
+    navigate('/');
+  };
+
+  // دالة للعودة لصفحة التقسيمة (البطولة)
+  const handleReturnToTournament = () => {
+    // تنظيف بيانات اللعبة الحالية فقط
+    const storageKey = getUsedQuestionsKey();
+    localStorage.removeItem(storageKey);
+    localStorage.removeItem('currentQuestion');
+    localStorage.removeItem('completeGameData');
+    localStorage.removeItem('currentTournamentMatch');
+    
+    
+    // العودة لصفحة التقسيمة
+    navigate('/CreateChampionTwo');
+  };
+
   // دالة للتعامل مع الضغط على الأرقام وجلب السؤال من API
   const handleQuestionClick = async (categoryId, points, side) => {
     if (loading || isQuestionUsed(categoryId, points, side)) return; // منع الضغط المتعدد
@@ -144,7 +239,6 @@ export default function GameBoard() {
     setLoading(true);
     
     try {
-      console.log(`🎯 جاري جلب سؤال للقسم ${categoryId} بنقاط ${points}`);
       
       // تحديد الدور الحالي بناءً على الجانب المضغوط
       const currentTurn = side === 'left' ? 1 : 2;
@@ -161,8 +255,6 @@ export default function GameBoard() {
           gameData.gameInfo.currentTurn = currentTurn;
           gameData.gameInfo.selectedCategoryName = categoryName; // حفظ اسم الفئة المختارة
           localStorage.setItem("completeGameData", JSON.stringify(gameData));
-          console.log(`🔄 تم تحديث الدور الحالي: ${currentTurn === 1 ? team1Name : team2Name}`);
-          console.log(`📂 تم حفظ اسم الفئة المختارة: ${categoryName}`);
         }
       }
       
@@ -182,7 +274,6 @@ export default function GameBoard() {
         
         localStorage.setItem("currentQuestion", JSON.stringify(gameQuestionData));
         
-        console.log("✅ تم حفظ السؤال في localStorage:", gameQuestionData);
         
         // تحديد السؤال المحدد كمستخدم
         markQuestionAsUsed(categoryId, points, side);
@@ -190,7 +281,6 @@ export default function GameBoard() {
         // الانتقال لصفحة السؤال
         navigate(`/TheGame/${categoryId}/${points}`);
       } else {
-        console.error("❌ لم يتم العثور على سؤال");
         // استخدام سؤال تجريبي كـ fallback
         const mockQuestion = {
           id: Math.random(),
@@ -208,7 +298,6 @@ export default function GameBoard() {
         };
         
         localStorage.setItem("currentQuestion", JSON.stringify(gameQuestionData));
-        console.log("⚠️ استخدام سؤال تجريبي:", gameQuestionData);
         
         // تحديد السؤال المحدد كمستخدم
         markQuestionAsUsed(categoryId, points, side);
@@ -216,7 +305,6 @@ export default function GameBoard() {
         navigate(`/TheGame/${categoryId}/${points}`);
       }
     } catch (error) {
-      console.error("❌ خطأ في جلب السؤال:", error);
       
       // في حالة فشل الـ API، استخدم سؤال تجريبي
       const mockQuestion = {
@@ -235,7 +323,6 @@ export default function GameBoard() {
       };
       
       localStorage.setItem("currentQuestion", JSON.stringify(gameQuestionData));
-      console.log("🔧 استخدام سؤال تجريبي بسبب خطأ في API:", gameQuestionData);
       
       // تحديد السؤال المحدد كمستخدم
       markQuestionAsUsed(categoryId, points, side);
@@ -250,20 +337,30 @@ export default function GameBoard() {
   const [team2Name, setTeam2Name] = useState("الفريق الثاني");
   const [showWinnerModal, setShowWinnerModal] = useState(false);
   const [gameFinished, setGameFinished] = useState(false);
+  const [isTournamentMode, setIsTournamentMode] = useState(false);
+  const [tournamentData, setTournamentData] = useState(null);
 
-  useEffect(() => {
-    // Load used questions from localStorage
-    const savedUsedQuestions = localStorage.getItem('usedQuestions');
+  // دالة لتحميل الأسئلة المستخدمة حسب نوع اللعبة
+  const loadUsedQuestions = () => {
+    const storageKey = getUsedQuestionsKey();
+    const savedUsedQuestions = localStorage.getItem(storageKey);
+    
     if (savedUsedQuestions) {
       try {
         const usedQuestionsArray = JSON.parse(savedUsedQuestions);
         setUsedQuestions(new Set(usedQuestionsArray));
-        console.log('🔄 تم تحميل الأسئلة المستخدمة:', usedQuestionsArray);
       } catch (error) {
-        console.error('خطأ في تحميل الأسئلة المستخدمة:', error);
+        setUsedQuestions(new Set());
       }
+    } else {
+      setUsedQuestions(new Set());
     }
-  }, []);
+  };
+
+  useEffect(() => {
+    // تحميل الأسئلة المستخدمة بعد تحديد نوع اللعبة
+    loadUsedQuestions();
+  }, [isTournamentMode]); // إعادة التحميل عند تغيير نوع اللعبة
 
   // Save hole state whenever it changes
   useEffect(() => {
@@ -275,24 +372,49 @@ export default function GameBoard() {
   // Load game data from localStorage on component mount and when returning from TheGame
   useEffect(() => {
     const loadGameData = () => {
+      // أولاً: تحميل الأقسام المختارة من selectedItems
+      const selectedItems = localStorage.getItem("selectedItems");
+      if (selectedItems) {
+        try {
+          const selectedCategories = JSON.parse(selectedItems);
+          if (selectedCategories && selectedCategories.length === 6) {
+            const loadedCategories = selectedCategories.map((cat, index) => ({
+              id: index + 1,
+              title: cat.name || cat.title,
+              img: cat.image || cat.img || "images/zGame_All_Pages-_3_-removebg-preview.png"
+            }));
+            setCategories(loadedCategories);
+          }
+        } catch (error) {
+        }
+      }
+
+      // ثانياً: تحميل بيانات اللعبة من completeGameData
       const completeGameData = localStorage.getItem("completeGameData");
       if (completeGameData) {
         const gameData = JSON.parse(completeGameData);
         
-        // Load categories from localStorage
-        if (gameData.categories && gameData.categories.length === 6) {
+        // تحميل الأقسام من completeGameData إذا لم توجد في selectedItems
+        if (!selectedItems && gameData.categories && gameData.categories.length === 6) {
           const loadedCategories = gameData.categories.map((cat, index) => ({
             id: index + 1,
             title: cat.title || cat.name,
-            img: cat.img || "images/zGame_All_Pages-_3_-removebg-preview.png"
+            img: cat.img || cat.image || "images/zGame_All_Pages-_3_-removebg-preview.png"
           }));
           setCategories(loadedCategories);
-          console.log("🎮 تم تحميل الفئات من localStorage:", loadedCategories);
         }
         
         // Load team names and scores from localStorage
         if (gameData.gameInfo) {
           const updates = {};
+          
+          // فحص إذا كانت اللعبة في وضع البطولة
+          if (gameData.gameInfo.isTournamentMode) {
+            setIsTournamentMode(true);
+            setTournamentData(gameData.gameInfo.tournamentData);
+            updates.isTournamentMode = true;
+            updates.tournamentData = gameData.gameInfo.tournamentData;
+          }
           
           if (gameData.gameInfo.team1Name) {
             setTeam1Name(gameData.gameInfo.team1Name);
@@ -323,10 +445,8 @@ export default function GameBoard() {
             updates.currentTeamUsingHole = gameData.gameInfo.currentTeamUsingHole;
           }
           
-          console.log("👥 تم تحميل حالة اللعبة من localStorage:", updates);
         }
       } else {
-        console.log("⚠️ لم يتم العثور على بيانات اللعبة في localStorage");
       }
     };
 
@@ -334,7 +454,6 @@ export default function GameBoard() {
     
     // Listen for focus events to reload data when returning from other pages
     const handleFocus = () => {
-      console.log("🔄 إعادة تحميل البيانات عند العودة للصفحة");
       loadGameData();
     };
     
@@ -349,7 +468,6 @@ export default function GameBoard() {
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === 'completeGameData') {
-        console.log("🔄 تم تحديث localStorage، إعادة تحميل البيانات");
         const gameData = JSON.parse(e.newValue || '{}');
         if (gameData.gameInfo) {
           if (gameData.gameInfo.team1Score !== undefined) {
@@ -465,6 +583,18 @@ export default function GameBoard() {
           </div>
         </div>
 
+        {/* زر العودة - يظهر فقط بعد انتهاء جميع الأسئلة */}
+        {areAllQuestionsFinished() && (
+          <div className="center-return-button">
+            <button 
+              className="return-button"
+              onClick={isTournamentMode ? handleReturnToTournament : handleReturnToHome}
+            >
+              {isTournamentMode ? 'العودة إلى صفحة التقسيمة' : 'العودة للصفحة الرئيسية'}
+            </button>
+          </div>
+        )}
+
         <div className="team team-right">
           <button className="name">{team2Name}</button>
           <div className="score-box">
@@ -559,10 +689,6 @@ export default function GameBoard() {
                       gameData.gameInfo.holeUsed = updatedHoleUsed;
                       gameData.gameInfo.currentTeamUsingHole = showHoleModal;
                       localStorage.setItem("completeGameData", JSON.stringify(gameData));
-                      console.log('💾 تم حفظ حالة الحفرة مباشرة:', { 
-                        holeUsed: updatedHoleUsed, 
-                        currentTeamUsingHole: showHoleModal 
-                      });
                     }
                   }
                   
@@ -625,18 +751,37 @@ export default function GameBoard() {
               )}
             </div>
             <div className="winner-modal-actions">
-              <button 
-                className="cancel-btn"
-                onClick={() => setShowWinnerModal(false)}
-              >
-                إغلاق
-              </button>
-              <button 
-                className="activate-btn"
-                onClick={resetGame}
-              >
-                لعبة جديدة
-              </button>
+              {isTournamentMode ? (
+                <>
+                  <button 
+                    className="cancel-btn"
+                    onClick={() => setShowWinnerModal(false)}
+                  >
+                    إغلاق
+                  </button>
+                  <button 
+                    className="activate-btn"
+                    onClick={handleTournamentMatchEnd}
+                  >
+                    العودة للبطولة
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button 
+                    className="cancel-btn"
+                    onClick={() => setShowWinnerModal(false)}
+                  >
+                    إغلاق
+                  </button>
+                  <button 
+                    className="activate-btn"
+                    onClick={resetGame}
+                  >
+                    لعبة جديدة
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

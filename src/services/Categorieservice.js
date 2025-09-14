@@ -14,7 +14,6 @@ class Categorieservice extends ApiFunctions {
       const response = await this.get();
       return response;
     } catch (error) {
-      console.error('خطأ في جلب جميع الفئات:', error);
       throw error;
     }
   };
@@ -25,7 +24,6 @@ class Categorieservice extends ApiFunctions {
       const response = await this.getWithPagination(1, searchTerm);
       return response;
     } catch (error) {
-      console.error('خطأ في البحث:', error);
       throw error;
     }
   };
@@ -43,7 +41,6 @@ class Categorieservice extends ApiFunctions {
       
       return response;
     } catch (error) {
-      console.error('خطأ في رفع الصورة:', error);
       throw error;
     }
   };
@@ -54,7 +51,6 @@ class Categorieservice extends ApiFunctions {
       const response = await this.getById(parentId);
       return response;
     } catch (error) {
-      console.error('خطأ في جلب الفئات الفرعية:', error);
       throw error;
     }
   };

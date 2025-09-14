@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Navigate, Outlet, useNavigate } from "react-router-dom";
-import { decryptData } from "../utils/encryption";
+// import { decryptData } from "../utils/encryption";
 
 const getUserFromStorage = () => {
   try {

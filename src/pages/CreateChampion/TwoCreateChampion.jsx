@@ -64,6 +64,20 @@ function TwoCreateChampion() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
+      // حفظ بيانات البطولة في localStorage
+      const tournamentData = {
+        tournamentName,
+        teamNames,
+        selectedTeams,
+        timestamp: new Date().toISOString(),
+        currentRound: 0,
+        currentMatch: 0,
+        winners: {},
+        isActive: true
+      };
+      
+      localStorage.setItem("tournamentData", JSON.stringify(tournamentData));
+      
       navigate("/CreateChampionTwo", {
         state: {
           tournamentName,
@@ -93,7 +107,7 @@ function TwoCreateChampion() {
   return (
     <div className="containera TwoCreateChampion">
       <h1>اختر نظام البطولة</h1>
-      <p>اصنع بطولتك وتحدّاهم، صار وقت التحدي مع ذاللعبة</p>
+      <p>اصنع بطولتك وتحدّاهم، حان وقت التحدي مع ذاللعبة</p>
 
       <div className="tournament-selection">
         <div className="tournament-options">

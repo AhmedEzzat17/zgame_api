@@ -67,7 +67,6 @@ const QuestionCreate = () => {
       
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
     } catch (error) {
-      console.error("Error fetching categories:", error);
       toast.error("حدث خطأ أثناء تحميل الأقسام");
     }
   };
@@ -170,7 +169,6 @@ const QuestionCreate = () => {
         headers['Content-Type'] = 'application/json';
       }
 
-      console.log('Submitting data:', isFormData ? 'FormData' : 'JSON', data);
 
       const response = await fetch('https://appgames.fikriti.com/api/v1/dashboard/questions', {
         method: 'POST',
@@ -185,16 +183,10 @@ const QuestionCreate = () => {
       try {
         result = responseText ? JSON.parse(responseText) : {};
       } catch (e) {
-        console.error('Error parsing JSON response:', e, 'Response:', responseText);
         throw new Error('Invalid JSON response from server');
       }
 
       if (!response.ok) {
-        console.error('API Error Response:', {
-          status: response.status,
-          statusText: response.statusText,
-          data: result
-        });
         
         const error = new Error(result.message || 'Request failed');
         error.response = {
@@ -206,10 +198,6 @@ const QuestionCreate = () => {
 
       return result;
     } catch (error) {
-      console.error("Error in submitData:", error);
-      if (error.response) {
-        console.error('Response error:', error.response.data);
-      }
       throw error;
     }
   };
@@ -253,8 +241,6 @@ const QuestionCreate = () => {
         if (formData.option_d.trim()) questionData.option_d = formData.option_d.trim();
       }
 
-      console.log("البيانات قبل الإرسال:", questionData);
-      console.log("correct_answer المنسق:", correctAnswerFormatted);
 
       let response;
       
@@ -286,13 +272,6 @@ const QuestionCreate = () => {
           formDataToSend.append("media_mime", formData.media_mime);
         }
 
-        // Debug: Log FormData contents
-        console.log("FormData contents:");
-        for (let [key, value] of formDataToSend.entries()) {
-          console.log(key, value instanceof File ? 
-            `File: ${value.name} (${value.size} bytes, ${value.type})` : 
-            value);
-        }
 
         // Submit with FormData
         response = await submitData(formDataToSend, true);
@@ -337,12 +316,10 @@ const QuestionCreate = () => {
 
       navigate("/Dashboard/questions");
     } catch (error) {
-      console.error("خطأ في إضافة السؤال:", error);
 
       let errorMessage = "حدث خطأ أثناء إضافة السؤال";
 
       if (error.response?.status === 422 && error.response?.data?.errors) {
-        console.log("أخطاء التحقق:", error.response.data.errors);
         const firstError = Object.values(error.response.data.errors)[0];
         if (Array.isArray(firstError)) errorMessage = firstError[0];
         setErrors(error.response.data.errors);

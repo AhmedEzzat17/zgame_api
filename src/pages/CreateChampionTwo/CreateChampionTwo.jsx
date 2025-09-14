@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { FaSync } from "react-icons/fa";
+import "@fortawesome/fontawesome-free/css/all.min.css";
 
 export default function CreateChampionTwo() {
   const location = useLocation();
@@ -9,18 +9,20 @@ export default function CreateChampionTwo() {
 
   // safety/fallbacks
   const N = selectedTeams || 4;
-  const teamNames = useMemo(() => {
+  const [teamNames, setTeamNames] = useState(() => {
     const arr = Array.isArray(incomingTeamNames) ? incomingTeamNames.slice(0, N) : [];
     // fill placeholders if missing
     while (arr.length < N) arr.push(`الفريق ${arr.length + 1}`);
     return arr;
-  }, [incomingTeamNames, N]);
+  });
 
   // State that records winners: mapping matchKey -> side (1 or 2)
   const [matchWinners, setMatchWinners] = useState({}); // e.g. { 'r0m0': 1, 'r1m0': 2, ... }
   const [winnerIndices, setWinnerIndices] = useState({}); // e.g. { 'r0m0': 0, ... } (original team index)
   const [running, setRunning] = useState(false);
   const [champ, setChamp] = useState(null);
+  const [currentMatchTeams, setCurrentMatchTeams] = useState(null);
+  const hasLoadedData = useRef(false);
 
   if (!teamNames || !tournamentName) {
     // رجوع آمن في حال المرور المباشر للصفحة
@@ -99,7 +101,37 @@ export default function CreateChampionTwo() {
       x0,
       colGap,
     };
-  }, [N]);
+  }, [N, teamNames]);
+
+  // دالة تبديل أسماء الفرق عشوائياً
+  const shuffleTeams = () => {
+    // فحص إذا كانت البطولة بدأت
+    const tournamentData = JSON.parse(localStorage.getItem("tournamentData") || "{}");
+    const winners = tournamentData.winners || {};
+    
+    if (Object.keys(winners).length > 0) {
+      alert("لا يمكن إعادة ترتيب الفرق بعد بدء المباريات");
+      return;
+    }
+    
+    // إنشاء نسخة من أسماء الفرق وخلطها عشوائياً
+    const shuffledTeams = [...teamNames];
+    for (let i = shuffledTeams.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledTeams[i], shuffledTeams[j]] = [shuffledTeams[j], shuffledTeams[i]];
+    }
+    
+    // تحديث أسماء الفرق فورياً
+    setTeamNames(shuffledTeams);
+    
+    // حفظ الترتيب الجديد في localStorage
+    const updatedTournamentData = {
+      ...tournamentData,
+      teamNames: shuffledTeams
+    };
+    localStorage.setItem("tournamentData", JSON.stringify(updatedTournamentData));
+    
+  };
 
   const reset = () => {
     setMatchWinners({});
@@ -166,32 +198,204 @@ export default function CreateChampionTwo() {
     }
   };
 
+  // دالة لإيجاد المباراة التالية
+  const findNextMatch = () => {
+    const tournamentData = JSON.parse(localStorage.getItem("tournamentData") || "{}");
+    const winners = tournamentData.winners || {};
+    
+    // البحث عن أول مباراة غير مكتملة
+    for (let r = 0; r < rounds.length; r++) {
+      for (let m = 0; m < rounds[r].length; m++) {
+        const match = rounds[r][m];
+        
+        // إذا لم تكن هذه المباراة مكتملة
+        if (!winners[match.key]) {
+          // فحص إذا كانت المباراة جاهزة للعب (المتطلبات متوفرة)
+          const canPlay = (() => {
+            if (r === 0) {
+              // الجولة الأولى - دائماً جاهزة
+              return true;
+            } else {
+              // الجولات التالية - تحتاج فائزين من الجولة السابقة
+              const leftChild = match.left;
+              const rightChild = match.right;
+              return winners[leftChild] && winners[rightChild];
+            }
+          })();
+          
+          if (canPlay) {
+            return { match, round: r, matchIndex: m };
+          }
+        }
+      }
+    }
+    
+    return null; // لا توجد مباريات متبقية
+  };
+
+  // دالة مساعدة للحصول على فهرس الفائز
+  const getWinnerIndex = (matchKey) => {
+    const tournamentData = JSON.parse(localStorage.getItem("tournamentData") || "{}");
+    const winners = tournamentData.winners || {};
+    const winnerSide = winners[matchKey];
+    const parentMatch = matchMap[matchKey];
+    
+    if (winnerSide === 1) {
+      return typeof parentMatch.left === "number" ? parentMatch.left : getWinnerIndex(parentMatch.left);
+    } else {
+      return typeof parentMatch.right === "number" ? parentMatch.right : getWinnerIndex(parentMatch.right);
+    }
+  };
+
   const startTournament = () => {
+    const nextMatchInfo = findNextMatch();
+    
+    if (!nextMatchInfo) {
+      // البطولة مكتملة - إظهار الفائز النهائي
+      const tournamentData = JSON.parse(localStorage.getItem("tournamentData") || "{}");
+      const winners = tournamentData.winners || {};
+      const finalMatch = rounds[rounds.length - 1][0];
+      
+      if (winners[finalMatch.key]) {
+        const winnerSide = winners[finalMatch.key];
+        const leftTeam = typeof finalMatch.left === "number" ? finalMatch.left : getWinnerIndex(finalMatch.left);
+        const rightTeam = typeof finalMatch.right === "number" ? finalMatch.right : getWinnerIndex(finalMatch.right);
+        const championIndex = winnerSide === 1 ? leftTeam : rightTeam;
+        const championName = teamNames[championIndex];
+        
+        alert(`🏆 تهانينا! البطولة مكتملة والفائز هو: ${championName}`);
+      } else {
+        alert("البطولة مكتملة!");
+      }
+      return;
+    }
+    
+    const { match, round, matchIndex } = nextMatchInfo;
+    
+    // حفظ ترتيب الفرق الحالي في localStorage عند بدء المباراة
+    const currentTournamentData = JSON.parse(localStorage.getItem("tournamentData") || "{}");
+    currentTournamentData.teamNames = teamNames;
+    localStorage.setItem("tournamentData", JSON.stringify(currentTournamentData));
+    
+    // تحديد أسماء الفرق
+    const getTeamName = (node) => {
+      if (typeof node === "number") {
+        return teamNames[node];
+      } else {
+        // هذا فائز من مباراة سابقة
+        const savedTournamentData = JSON.parse(localStorage.getItem("tournamentData") || "{}");
+        const winners = savedTournamentData.winners || {};
+        const winnerSide = winners[node];
+        const parentMatch = matchMap[node];
+        
+        if (winnerSide === 1) {
+          const leftTeam = typeof parentMatch.left === "number" ? parentMatch.left : getWinnerIndex(parentMatch.left);
+          return teamNames[leftTeam];
+        } else {
+          const rightTeam = typeof parentMatch.right === "number" ? parentMatch.right : getWinnerIndex(parentMatch.right);
+          return teamNames[rightTeam];
+        }
+      }
+    };
+    
+    const team1Index = typeof match.left === "number" ? match.left : getWinnerIndex(match.left);
+    const team2Index = typeof match.right === "number" ? match.right : getWinnerIndex(match.right);
+    
+    const matchData = {
+      team1Name: getTeamName(match.left),
+      team2Name: getTeamName(match.right),
+      team1Index,
+      team2Index,
+      matchKey: match.key,
+      round,
+      matchIndex,
+      tournamentName,
+      totalTeams: N
+    };
+    
+    // حفظ بيانات المباراة الحالية
+    localStorage.setItem("currentTournamentMatch", JSON.stringify(matchData));
+    
+    // تحديث بيانات البطولة
+    const tournamentData = JSON.parse(localStorage.getItem("tournamentData") || "{}");
+    tournamentData.currentRound = round;
+    tournamentData.currentMatch = matchIndex;
+    tournamentData.currentMatchData = matchData;
+    localStorage.setItem("tournamentData", JSON.stringify(tournamentData));
+    
+    
+    // الانتقال لصفحة معلومات الفرق فوراً
+    navigate("/OneCreateGame", { replace: true });
+  };
+
+  const simulateTournament = () => {
     if (running) {
       reset();
-      setTimeout(() => runSequence(), 250);
+      runSequence();
       return;
     }
     runSequence();
   };
 
   // helpers to get labels (recursive)
-  const getLabelForNode = (node) => {
+  const getDisplayName = (node) => {
     if (typeof node === "number") {
-      return teamNames[node] || `الفريق ${node + 1}`;
+      return teamNames[node];
     }
-    // node is match key:
+    
+    // Check if we have winners data from localStorage
+    const tournamentData = JSON.parse(localStorage.getItem("tournamentData") || "{}");
+    const winners = tournamentData.winners || {};
+    
+    // If we have a winner name saved, use it
+    if (winners[node]) {
+      return winners[node];
+    }
+    
+    // If we have winnerIndices, use team name
     if (winnerIndices[node] !== undefined && winnerIndices[node] !== null) {
       return teamNames[winnerIndices[node]];
     }
-    // otherwise return placeholder "الفائز من X و Y"
+    
+    // Check if this match has child matches that have winners
     const match = matchMap[node];
-    if (!match) return "الفائز";
-    const left = match.left;
-    const right = match.right;
-    const leftLabel = typeof left === "number" ? teamNames[left] : getLabelForNode(left);
-    const rightLabel = typeof right === "number" ? teamNames[right] : getLabelForNode(right);
-    return `الفائز من الفريقين`;
+    if (match) {
+      const leftChild = match.left;
+      const rightChild = match.right;
+      
+      // Get names of potential participants
+      let leftName = "";
+      let rightName = "";
+      
+      if (typeof leftChild === "number") {
+        leftName = teamNames[leftChild];
+      } else if (winners[leftChild]) {
+        leftName = winners[leftChild];
+      }
+      
+      if (typeof rightChild === "number") {
+        rightName = teamNames[rightChild];
+      } else if (winners[rightChild]) {
+        rightName = winners[rightChild];
+      }
+      
+      // If both participants are known, show them
+      if (leftName && rightName) {
+        return `${leftName} vs ${rightName}`;
+      }
+      
+      // If only one participant is known
+      if (leftName && !rightName) {
+        return `${leftName} vs ?`;
+      }
+      
+      if (!leftName && rightName) {
+        return `? vs ${rightName}`;
+      }
+    }
+    
+    // Default placeholder when no information is available
+    return `في انتظار المتأهلين`;
   };
 
   const connectorActive = (childKey) => {
@@ -204,6 +408,100 @@ export default function CreateChampionTwo() {
     return Boolean(winnerIndices[childKey] !== undefined && winnerIndices[childKey] !== null);
   };
 
+  // دالة مساعدة للحصول على فهرس الفريق من اسمه
+  const getTeamIndexByName = (teamName) => {
+    return teamNames.findIndex(name => name === teamName);
+  };
+
+  // دالة محسنة للحصول على فهرس الفائز من اسم الفائز
+  const getWinnerIndexFromName = (matchKey, winnerName) => {
+    const match = matchMap[matchKey];
+    if (!match) return null;
+    
+    // للجولة الأولى، البحث مباشرة في أسماء الفرق
+    if (match.round === 0) {
+      return getTeamIndexByName(winnerName);
+    }
+    
+    // للجولات التالية، البحث في الفائزين السابقين
+    const tournamentData = JSON.parse(localStorage.getItem("tournamentData") || "{}");
+    const winners = tournamentData.winners || {};
+    
+    // البحث في الفائزين من المباريات السابقة
+    for (const [prevMatchKey, prevWinnerName] of Object.entries(winners)) {
+      if (prevWinnerName === winnerName) {
+        const prevMatch = matchMap[prevMatchKey];
+        if (prevMatch && prevMatch.round === 0) {
+          return getTeamIndexByName(winnerName);
+        }
+      }
+    }
+    
+    return getTeamIndexByName(winnerName);
+  };
+
+  // تحميل بيانات البطولة من localStorage عند تحميل الصفحة
+  useEffect(() => {
+    if (hasLoadedData.current) return;
+    
+    const savedTournamentData = localStorage.getItem("tournamentData");
+    if (savedTournamentData) {
+      try {
+        const tournamentData = JSON.parse(savedTournamentData);
+        
+        // تحديث أسماء الفرق إذا كانت محفوظة
+        if (tournamentData.teamNames && Array.isArray(tournamentData.teamNames)) {
+          setTeamNames(tournamentData.teamNames);
+        }
+        
+        if (tournamentData.winners && Object.keys(tournamentData.winners).length > 0) {
+          // تحديث matchWinners بناءً على أسماء الفائزين
+          const newMatchWinners = {};
+          const newWinnerIndices = {};
+          
+          Object.keys(tournamentData.winners).forEach(matchKey => {
+            const winnerName = tournamentData.winners[matchKey];
+            const match = matchMap[matchKey];
+            
+            if (match && winnerName) {
+              // تحديد أي جانب فاز بناءً على اسم الفائز
+              const getTeamNameForSide = (side) => {
+                const node = side === 1 ? match.left : match.right;
+                if (typeof node === "number") {
+                  return tournamentData.teamNames ? tournamentData.teamNames[node] : teamNames[node];
+                } else {
+                  // البحث في الفائزين السابقين
+                  return tournamentData.winners[node] || "";
+                }
+              };
+              
+              const leftTeamName = getTeamNameForSide(1);
+              const rightTeamName = getTeamNameForSide(2);
+              
+              if (winnerName === leftTeamName) {
+                newMatchWinners[matchKey] = 1;
+              } else if (winnerName === rightTeamName) {
+                newMatchWinners[matchKey] = 2;
+              }
+              
+              // حفظ فهرس الفائز
+              const winnerIndex = getWinnerIndexFromName(matchKey, winnerName);
+              if (winnerIndex !== null && winnerIndex !== -1) {
+                newWinnerIndices[matchKey] = winnerIndex;
+              }
+            }
+          });
+          
+          setMatchWinners(newMatchWinners);
+          setWinnerIndices(newWinnerIndices);
+        }
+        
+        hasLoadedData.current = true;
+      } catch (error) {
+      }
+    }
+  }, [matchMap]);
+
   return (
     <div className="tournament-root" dir="rtl">
       <div className="containero">
@@ -212,7 +510,17 @@ export default function CreateChampionTwo() {
         <div className="subtitle-container">
           <h2 className="subtitle">
             اعادة تغيير الترتيب التنافسي للفرق
-            <FaSync className="sync-icon" />
+            <i 
+              className="fa-solid fa-sync sync-icon" 
+              onClick={shuffleTeams} 
+              style={{ 
+                cursor: 'pointer',
+                marginRight: '10px',
+                color: '#ff6b35',
+                fontSize: '20px'
+              }} 
+              title="اضغط لإعادة ترتيب الفرق عشوائياً"
+            ></i>
           </h2>
         </div>
 
@@ -286,9 +594,15 @@ export default function CreateChampionTwo() {
                 const matchWinnerSide = matchWinners[match.key]; // 1 or 2
 
                 // label (winner name or placeholder)
-                const label = winnerForThisMatch !== undefined && winnerForThisMatch !== null
-                  ? teamNames[winnerForThisMatch]
-                  : getLabelForNode(match.key);
+                // أولاً نتحقق من وجود فائز محفوظ في localStorage
+                const tournamentData = JSON.parse(localStorage.getItem("tournamentData") || "{}");
+                const winners = tournamentData.winners || {};
+                
+                const label = winners[match.key] 
+                  ? winners[match.key] // اسم الفائز الحقيقي المحفوظ
+                  : (winnerForThisMatch !== undefined && winnerForThisMatch !== null
+                      ? teamNames[winnerForThisMatch]
+                      : getDisplayName(match.key));
 
                 return (
                   <g key={match.key}>
@@ -324,9 +638,9 @@ export default function CreateChampionTwo() {
 
                     {/* trophy for final */}
                     {isFinal && (
-                      <text className="trophy" x={parentLeftX + (rectW + 40) / 2} y={parentCenterY + (rectH + -75) / 2 + 8} textAnchor="middle">
-                        {champ === null ? "🏆" : "🏆"}
-                      </text>
+                      <foreignObject x={parentLeftX + (rectW + 40) / 2 - 15} y={parentCenterY + (rectH + -75) / 2 - 7} width="30" height="30">
+                        <i className="fa-solid fa-trophy" style={{ fontSize: '24px', color: 'orange' }}></i>
+                      </foreignObject>
                     )}
                   </g>
                 );
@@ -336,19 +650,25 @@ export default function CreateChampionTwo() {
         </div>
 
         <div className="controls">
-          <Link to="/OneCreateGame">
-          <button className="start-btn" onClick={startTournament}>
-            {running ? "إعادة تشغيل" : "ابدأ البطولة"}
+          <button 
+            className="start-btn" 
+            onClick={startTournament}
+            disabled={!findNextMatch()}
+            style={!findNextMatch() ? { backgroundColor: '#ccc', cursor: 'not-allowed' } : {}}
+          >
+            {findNextMatch() ? "ابدأ المباراة التالية" : "البطولة مكتملة"}
           </button>
-          </Link>
           <button
             className="start-btn"
             style={{ marginLeft: 12, background: "#888", boxShadow: "none" }}
             onClick={() => {
               reset();
+              // مسح بيانات البطولة
+              localStorage.removeItem("tournamentData");
+              localStorage.removeItem("currentTournamentMatch");
             }}
           >
-            إعادة تعيين
+            إعادة تعيين البطولة
           </button>
         </div>
       </div>

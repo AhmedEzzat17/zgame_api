@@ -5,6 +5,15 @@ import { faTrophy } from "@fortawesome/free-solid-svg-icons";
 import { Link } from "react-router-dom";
 
 const HeroSection = () => {
+  // دالة تنظيف بيانات البطولة عند إنشاء لعبة عادية
+  const handleCreateGame = () => {
+    // تنظيف بيانات البطولة عند الضغط على "إنشاء لعبة"
+    localStorage.removeItem("currentTournamentMatch");
+    localStorage.removeItem("tournamentData");
+    localStorage.removeItem("usedQuestionsTournament"); // مسح أسئلة البطولة المستخدمة
+    window.scrollTo(0, 0);
+  };
+
   return (
     <section id="hero" className="hero section dark-background">
       <div className="main-img"></div>
@@ -29,7 +38,7 @@ const HeroSection = () => {
       <div className="image-grid">
         <Link
           to="/OneCreateGame"
-          onClick={() => window.scrollTo(0, 0)}
+          onClick={handleCreateGame}
           className="link-wrapper"
         >
           <div className="grid-item">

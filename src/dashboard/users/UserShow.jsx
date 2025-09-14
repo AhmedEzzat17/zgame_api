@@ -48,7 +48,6 @@ const UserShow = () => {
       // والـ last_page موجودة في res.data.data.last_page
       setLastPage(res.data.data.last_page);
     } catch (err) {
-      console.error(err);
     }
   };
 
@@ -66,7 +65,6 @@ const UserShow = () => {
       setTimeout(() => setMessage(""), 3000);
       fetchUsers(page, search);
     } catch (err) {
-      console.error(err);
     }
   };
 

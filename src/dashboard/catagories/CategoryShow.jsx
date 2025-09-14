@@ -44,13 +44,11 @@ const CategoryShow = () => {
   const fetchCategories = async (currentPage = 1, searchTerm = "") => {
     try {
       setLoading(true);
-      console.log("🔄 بدء تحميل البيانات...");
 
       const res = await CategoryService.getWithPagination(
         currentPage,
         searchTerm
       );
-      console.log("📨 البيانات المستلمة:", res.data);
 
       // معالجة البيانات بشكل مبسط
       let categoriesData = [];
@@ -59,33 +57,24 @@ const CategoryShow = () => {
       if (res.data?.data?.data?.data) {
         categoriesData = res.data.data.data.data;
         totalPages = res.data.data.data.last_page || 1;
-        console.log("📊 البيانات من المستوى الرابع");
       } else if (res.data?.data?.data) {
         categoriesData = res.data.data.data;
         totalPages = res.data.data.last_page || 1;
-        console.log("📊 البيانات من المستوى الثالث");
       } else if (res.data?.data) {
         categoriesData = res.data.data;
         totalPages = res.data.last_page || 1;
-        console.log("📊 البيانات من المستوى الثاني");
       }
 
-      console.log("✅ عدد الفئات:", categoriesData?.length);
-      console.log("📄 إجمالي الصفحات:", totalPages);
 
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
       setLastPage(totalPages);
     } catch (err) {
-      console.error("❌ فشل في جلب البيانات:", err);
-      console.error("❌ رسالة الخطأ:", err.message);
-      console.error("❌ استجابة الخادم:", err.response?.data);
 
       setCategories([]);
       setLastPage(1);
       showMessage("فشل في تحميل البيانات", "error");
     } finally {
       setLoading(false);
-      console.log("🏁 انتهاء تحميل البيانات");
     }
   };
 
@@ -104,7 +93,6 @@ const CategoryShow = () => {
     if (!window.confirm("هل أنت متأكد من حذف هذا القسم؟")) return;
 
     try {
-      console.log("🗑️ حذف القسم:", id);
       await CategoryService.delete(id);
 
       // حذف القسم من localStorage
@@ -119,7 +107,6 @@ const CategoryShow = () => {
       showMessage("تم حذف القسم بنجاح", "success");
       fetchCategories(page, search);
     } catch (err) {
-      console.error("❌ خطأ في الحذف:", err);
       const errorMessage = err.response?.data?.message || "حدث خطأ أثناء الحذف";
       showMessage(errorMessage, "error");
     }
@@ -156,10 +143,8 @@ const CategoryShow = () => {
     if (!imagePath.startsWith("http")) {
       imagePath = `https://appgames.fikriti.com/${cat.image}`;
 
-      console.log("🖼️ رابط الصورة:", imagePath);
     }
 
-    console.log(`🖼️ عرض صورة ${cat.name}:`, imagePath);
 
     return (
       <img
@@ -172,11 +157,8 @@ const CategoryShow = () => {
           minWidth: "50px",
           objectFit: "cover",
         }}
-        onLoad={() => {
-          console.log(`✅ تم تحميل صورة ${cat.name} بنجاح`);
-        }}
+        onLoad={() => {}}
         onError={(e) => {
-          console.error(`❌ فشل تحميل صورة ${cat.name}:`, imagePath);
           // منع التكرار المستمر
           e.target.onerror = null;
 
@@ -300,12 +282,6 @@ const CategoryShow = () => {
                   <tbody>
                     {categories.length > 0 ? (
                       categories.map((cat, index) => {
-                        console.log(
-                          `🏷️ عرض الفئة ${index + 1}:`,
-                          cat.name,
-                          "الصورة:",
-                          cat.image
-                        );
 
                         return (
                           <tr key={cat.id}>

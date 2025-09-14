@@ -49,13 +49,10 @@ function TheGame() {
             setTeam1Name(gameData.gameInfo.team1Name || "الفريق الأول");
             setTeam2Name(gameData.gameInfo.team2Name || "الفريق الثاني");
             setTeam1Score(gameData.gameInfo.team1Score || 0);
-            setTeam2Score(gameData.gameInfo.team2Score || 0);
             setCurrentTurn(gameData.gameInfo.currentTurn || 1);
             
             // إذا كانت اللعبة مستكملة، اعرض رسالة
             if (gameData.isResumed) {
-              console.log("🔄 تم استكمال اللعبة من آخر نقطة توقف");
-              console.log(`📊 النقاط الحالية: ${gameData.gameInfo.team1Name}: ${gameData.gameInfo.team1Score} - ${gameData.gameInfo.team2Name}: ${gameData.gameInfo.team2Score}`);
             }
           }
           
@@ -74,7 +71,6 @@ function TheGame() {
           }
           
           setGameName(loadedGameName);
-          console.log("🎮 تم تحميل اسم اللعبة:", loadedGameName);
           
           // Load team names and scores
           if (gameData.gameInfo) {
@@ -102,7 +98,6 @@ function TheGame() {
             };
             
             setQuestionData(formattedQuestion);
-            console.log("✅ تم تحميل السؤال من localStorage:", formattedQuestion);
           } else {
             // Question doesn't match, try to fetch from API directly
             await fetchQuestionFromAPI();
@@ -115,7 +110,6 @@ function TheGame() {
         // Function to fetch question directly from API
         async function fetchQuestionFromAPI() {
           try {
-            console.log(`🚀 جاري جلب سؤال من API للقسم ${categoryId} بنقاط ${value}`);
             
             const response = await questionsService.getRandomByCategoryAndPoints(categoryId, value);
             
@@ -129,7 +123,6 @@ function TheGame() {
               };
               
               setQuestionData(formattedQuestion);
-              console.log("✅ تم جلب السؤال مباشرة من API:", formattedQuestion);
               
               // Save to localStorage for future use
               const gameQuestionData = {
@@ -141,11 +134,9 @@ function TheGame() {
               localStorage.setItem("currentQuestion", JSON.stringify(gameQuestionData));
               
             } else {
-              console.error("❌ لم يتم العثور على سؤال من API");
               setQuestionData(null);
             }
           } catch (error) {
-            console.error("❌ خطأ في جلب السؤال من API:", error);
             setQuestionData(null);
           }
         }
@@ -163,7 +154,6 @@ function TheGame() {
         }
         
       } catch (error) {
-        console.error("❌ خطأ في تحميل بيانات اللعبة:", error);
         setQuestionData(null);
       } finally {
         setLoading(false);
@@ -186,7 +176,6 @@ function TheGame() {
         gameData.gameInfo.team1Score = newTeam1Score;
         gameData.gameInfo.team2Score = newTeam2Score;
         localStorage.setItem("completeGameData", JSON.stringify(gameData));
-        console.log("💾 تم حفظ النقاط:", { team1: newTeam1Score, team2: newTeam2Score });
       }
     }
   };
@@ -214,7 +203,6 @@ function TheGame() {
       // حفظ التقدم مع الاحتفاظ بالأسئلة المستخدمة
       gameData.timestamp = new Date().toISOString();
       localStorage.setItem("completeGameData", JSON.stringify(gameData));
-      console.log("💾 تم حفظ التقدم - النقاط المحدثة:", gameData.gameInfo);
     }
     
     // Switch turn
@@ -255,7 +243,6 @@ function TheGame() {
       // حفظ التقدم مع الاحتفاظ بالأسئلة المستخدمة
       gameData.timestamp = new Date().toISOString();
       localStorage.setItem("completeGameData", JSON.stringify(gameData));
-      console.log("💾 تم حفظ التقدم - تبديل الدور");
     }
     
     // Switch turn

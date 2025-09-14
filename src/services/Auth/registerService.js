@@ -15,7 +15,6 @@ class RegisterService extends ApiFunctions {
       }
 
       // طباعة البيانات للتأكد من صحتها
-      console.log("📤 Sending registration data:", userData);
 
       // إرسال البيانات بدون Authentication header (لأن المستخدم لم يسجل دخول بعد)
       const response = await this.post(userData, { 
@@ -23,11 +22,9 @@ class RegisterService extends ApiFunctions {
         useCredentials: false 
       });
 
-      console.log("✅ Registration successful:", response.data);
       return response;
 
     } catch (error) {
-      console.error("❌ Registration failed:", error.response?.data || error.message);
       
       // إعادة throw للـ error ليتم التعامل معه في الـ component
       throw error;
@@ -43,7 +40,6 @@ class RegisterService extends ApiFunctions {
       });
       return response;
     } catch (error) {
-      console.error("Email check failed:", error);
       throw error;
     }
   }

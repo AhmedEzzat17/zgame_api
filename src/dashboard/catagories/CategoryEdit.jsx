@@ -79,7 +79,6 @@ export default function CategoryEdit() {
         setImagePreview(imageUrl);
       }
     } catch (err) {
-      console.error("فشل تحميل البيانات:", err);
       showMessage("فشل تحميل بيانات القسم", "error");
     } finally {
       setLoading(false);
@@ -114,7 +113,6 @@ export default function CategoryEdit() {
       // Save to localStorage for future use
       localStorage.setItem("countries", JSON.stringify(validCountries));
     } catch (error) {
-      console.error("فشل في جلب الدول:", error);
       setCountries([]);
     }
   };
@@ -228,7 +226,6 @@ export default function CategoryEdit() {
         navigate("/Dashboard/categories");
       }, 2000);
     } catch (err) {
-      console.error("خطأ أثناء التحديث:", err);
 
       if (err.response?.data?.errors) {
         setErrors(err.response.data.errors);

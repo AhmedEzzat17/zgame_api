@@ -23,7 +23,6 @@ class CountriesService extends ApiFunctions {
       });
       return response;
     } catch (error) {
-      console.error(`POST JSON ${this.endpoint} failed:`, error.response?.data || error.message);
       throw error;
     }
   };

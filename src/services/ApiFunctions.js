@@ -25,7 +25,6 @@ apiClient.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (e) {
-      console.error("Error parsing user data:", e);
     }
     
     return config;
@@ -63,7 +62,6 @@ export default class ApiFunctions {
       const user = JSON.parse(localStorage.getItem("user"));
       return user?.token || null;
     } catch (e) {
-      console.error("Error parsing user data:", e);
       return null;
     }
   }
@@ -104,10 +102,6 @@ export default class ApiFunctions {
         withCredentials: useCredentials,
       });
     } catch (error) {
-      console.error(`GET ${this.endpoint} failed:`, error.response?.data || error.message);
-      console.log('Status:', error.response?.status);
-      console.log('Headers:', error.response?.headers);
-      console.log('Full response:', error.response);
       throw error;
     }
   };
@@ -119,7 +113,6 @@ export default class ApiFunctions {
         withCredentials: useCredentials,
       });
     } catch (error) {
-      console.error(`GET ${this.endpoint}/${id} failed:`, error.response?.data || error.message);
       throw error;
     }
   };
@@ -131,7 +124,6 @@ export default class ApiFunctions {
         withCredentials: useCredentials,
       });
     } catch (error) {
-      console.error(`EDIT ${this.endpoint}/${id} failed:`, error.response?.data || error.message);
       throw error;
     }
   };
@@ -174,19 +166,10 @@ export default class ApiFunctions {
         }
       }
 
-      console.log('POST Config:', config);
-      console.log('POST Data type:', isFormData ? 'FormData' : 'JSON');
       
       const response = await apiClient.post(this.endpoint, data, config);
       return response;
     } catch (error) {
-      console.error(`POST ${this.endpoint} failed:`, {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        headers: error.response?.headers,
-        config: error.config
-      });
       throw error;
     }
   };
@@ -219,7 +202,6 @@ export default class ApiFunctions {
 
       return await apiClient.patch(`${this.endpoint}/${id}`, data, config);
     } catch (error) {
-      console.error(`PATCH ${this.endpoint}/${id} failed:`, error.response?.data || error.message);
       throw error;
     }
   };
@@ -256,7 +238,6 @@ export default class ApiFunctions {
 
       return await this.patch(id, data, { withAuth, useCredentials });
     } catch (error) {
-      console.error(`PATCH POST ${this.endpoint}/${id} failed:`, error.response?.data || error.message);
       throw error;
     }
   };
@@ -268,7 +249,6 @@ export default class ApiFunctions {
         withCredentials: useCredentials,
       });
     } catch (error) {
-      console.error(`DELETE ${this.endpoint}/${id} failed:`, error.response?.data || error.message);
       throw error;
     }
   };
@@ -289,7 +269,6 @@ export default class ApiFunctions {
         withCredentials: useCredentials,
       });
     } catch (error) {
-      console.error(`GET Pagination ${url} failed:`, error.response?.data || error.message);
       throw error;
     }
   };

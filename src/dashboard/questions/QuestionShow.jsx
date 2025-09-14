@@ -48,7 +48,6 @@ const QuestionShow = () => {
       setQuestions(res.data.data.data);
       setLastPage(res.data.data.last_page);
     } catch (err) {
-      console.error(err);
       setMessage("حدث خطأ أثناء جلب البيانات");
     } finally {
       setLoading(false);
@@ -79,7 +78,6 @@ const QuestionShow = () => {
       setTimeout(() => setMessage(""), 3000);
       fetchQuestions(page, search);
     } catch (err) {
-      console.error(err);
       setMessage("حدث خطأ أثناء حذف السؤال");
     }
   };
@@ -104,7 +102,6 @@ const QuestionShow = () => {
       setTimeout(() => setMessage(""), 3000);
       fetchQuestions(page, search);
     } catch (err) {
-      console.error(err);
       setMessage("حدث خطأ أثناء تحديث حالة السؤال");
     }
   };

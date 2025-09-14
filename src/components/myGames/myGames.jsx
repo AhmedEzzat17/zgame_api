@@ -41,7 +41,6 @@ const MyGames = () => {
   const [games, setGames] = useState(sampleGames);
 
   const handlePlayGame = (gameId) => {
-    console.log("Playing game:", gameId);
     // Navigate to game or implement play logic
     navigate(`/game/${gameId}`);
   };

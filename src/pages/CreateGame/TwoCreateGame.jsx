@@ -48,7 +48,6 @@ export default function TwoCreateGame({
       // تحديث البيانات دائماً من API - لا نعتمد على localStorage للتخزين المؤقت
       // هذا يضمن أن البيانات محدثة دائماً من الداشبورد
       
-      console.log("🔄 جاري تحديث البيانات من الداشبورد...");
       
       // Fetch countries from API
       let countriesData = [];
@@ -62,7 +61,6 @@ export default function TwoCreateGame({
           countriesData = Array.isArray(countriesResponse.data) ? countriesResponse.data : [];
         }
       } catch (error) {
-        console.error("Error fetching countries:", error);
       }
       
       // Fetch categories from API
@@ -77,17 +75,13 @@ export default function TwoCreateGame({
           categoriesData = Array.isArray(categoriesResponse.data) ? categoriesResponse.data : [];
         }
       } catch (error) {
-        console.error("Error fetching categories:", error);
       }
       
       const validCountries = Array.isArray(countriesData) ? countriesData : [];
       const validCategories = Array.isArray(categoriesData) ? categoriesData : [];
       
-      console.log("🌍 Final Countries Data:", validCountries);
-      console.log("📂 Final Categories Data:", validCategories);
       
       // طباعة تفاصيل الأقسام مع country_id للتأكد من الربط
-      console.log("🔍 فحص البيانات الكاملة للأقسام:", validCategories);
       
       setCountries(validCountries);
       setCategories(validCategories);
@@ -97,7 +91,6 @@ export default function TwoCreateGame({
       localStorage.setItem("categories", JSON.stringify(validCategories));
       
     } catch (error) {
-      console.error("Error in fetchCountriesAndCategories:", error);
     } finally {
       setLoading(false);
     }
@@ -123,7 +116,6 @@ export default function TwoCreateGame({
 
   // Dynamic flags from countries data - using exact same method as CountryShow.jsx
   const flags = countries.map(country => {
-    console.log(`🏳️ Processing flag for country ${country.name}:`, country.flag);
     return {
       id: country.id,
       name: country.name,
@@ -196,20 +188,17 @@ export default function TwoCreateGame({
     // والأقسام بدون country_id تظهر في قسم "فئات عامة"
     allCategories.forEach(category => {
       const countryId = category.country_id;
-      console.log(`🔍 فحص القسم: ${category.name} - country_id: ${countryId}`);
       if (countryId && countryId !== null && countryId !== undefined) {
         if (!grouped[countryId]) {
           grouped[countryId] = [];
         }
         grouped[countryId].push(category);
-        console.log(`✅ تم إضافة القسم ${category.name} للدولة ${countryId}`);
       } else {
         // إضافة الأقسام بدون country_id لقسم "فئات عامة"
         if (!grouped['general']) {
           grouped['general'] = [];
         }
         grouped['general'].push(category);
-        console.log(`📝 تم إضافة القسم ${category.name} للفئات العامة`);
       }
     });
     

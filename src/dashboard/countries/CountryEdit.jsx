@@ -68,7 +68,6 @@ const CountryEdit = () => {
         setPreview(country.flag);
       }
     } catch (error) {
-      console.error("Error fetching country:", error);
       toast.error("حدث خطأ أثناء تحميل بيانات الدولة");
     } finally {
       setLoading(false);
@@ -185,10 +184,6 @@ const CountryEdit = () => {
       }
 
       // للتأكد من البيانات المرسلة
-      console.log("البيانات المرسلة للتحديث:");
-      for (let [key, value] of formDataToSend.entries()) {
-        console.log(key, value);
-      }
 
       const response = await CountryService.update(id, formDataToSend);
 
@@ -221,8 +216,6 @@ const CountryEdit = () => {
 
       navigate("/Dashboard/countries");
     } catch (error) {
-      console.error("Error updating country:", error);
-      console.log("Server validation errors:", error.response?.data?.errors);
 
       const errorMessage =
         error.response?.data?.message || "حدث خطأ أثناء تحديث الدولة";

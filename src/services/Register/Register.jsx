@@ -58,7 +58,6 @@ const Register = () => {
         birth_date: formData.birth_date,
       });
 
-      console.log("✅ Response:", response.data);
       
       if (response.data) {
         const { message: responseMessage } = response.data;
@@ -83,7 +82,6 @@ const Register = () => {
         setTimeout(() => navigate("/login"), 1500);
       }
     } catch (error) {
-      console.error("❌ Error:", error.response?.data || error.message);
       
       // معالجة أخطاء التحقق من الخادم
       if (error.response?.data?.errors) {

@@ -69,7 +69,6 @@ const QuestionEdit = () => {
       
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
     } catch (error) {
-      console.error("Error fetching categories:", error);
     }
   };
 
@@ -108,7 +107,6 @@ const QuestionEdit = () => {
         setPreview(question.question_media_url);
       }
     } catch (error) {
-      console.error("Error fetching question:", error);
       toast.error("حدث خطأ أثناء تحميل بيانات السؤال");
     } finally {
       setLoading(false);
@@ -271,10 +269,6 @@ const QuestionEdit = () => {
         formDataToSend.append("remove_media", "1");
       }
 
-      console.log("البيانات المرسلة للتحديث:");
-      for (let [key, value] of formDataToSend.entries()) {
-        console.log(key, value);
-      }
 
       const response = await QuestionsService.update(id, formDataToSend);
 
@@ -312,12 +306,6 @@ const QuestionEdit = () => {
 
       navigate("/Dashboard/questions");
     } catch (error) {
-      console.error("Error updating question:", error);
-      console.log("Server validation errors:", error.response?.data?.errors);
-      console.log("Full error response:", error.response?.data);
-      if (error.response?.data?.errors?.correct_answer) {
-        console.log("Correct answer error details:", error.response.data.errors.correct_answer);
-      }
       setErrors(error.response?.data?.errors || {});
       toast.error("حدث خطأ أثناء تحديث السؤال");
     } finally {
@@ -409,7 +397,6 @@ const QuestionEdit = () => {
           alt="معاينة الوسائط"
           className="img-fluid h-100 w-100 object-fit-cover"
           onError={(e) => {
-            console.error('Image load error:', e.target.src);
             e.target.style.display = 'none';
             e.target.nextSibling.style.display = 'flex';
           }}

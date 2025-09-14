@@ -9,6 +9,20 @@ const Navbar = () => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const navigate = useNavigate();
 
+  // دالة تنظيف بيانات البطولة
+  const handleLogoClick = () => {
+    // تنظيف بيانات البطولة عند الضغط على اللوجو
+    localStorage.removeItem("currentTournamentMatch");
+    localStorage.removeItem("tournamentData");
+  };
+
+  // دالة تنظيف بيانات البطولة عند الانتقال للعبة
+  const handleGameNavigation = () => {
+    // تنظيف بيانات البطولة عند الضغط على "العب"
+    localStorage.removeItem("currentTournamentMatch");
+    localStorage.removeItem("tournamentData");
+    setIsOpen(false);
+  };
 
   useEffect(() => {
     const loadUser = () => {
@@ -72,7 +86,7 @@ const Navbar = () => {
       <nav className="navbar">
         <div className="navbar-container">
           {/* Logo */}
-          <Link to="/">
+          <Link to="/" onClick={handleLogoClick}>
             <div className="logo">
               <img src="images/zGame_All_Pages-removebg-preview.png" alt="سبين جيم" />
             </div>
@@ -80,12 +94,16 @@ const Navbar = () => {
 
           {/* Menu Links */}
           <ul className={`nav-links ${isOpen ? "open" : ""}`}>
-            <Link to="/OneCreateGame" onClick={() => setIsOpen(false)}>
-              <li><a href="#play">العب</a></li>
-            </Link>
-            <Link to="/Contact" onClick={() => setIsOpen(false)}>
-              <li><a href="#contact">تواصل معنا</a></li>
-            </Link>
+            <li>
+              <Link to="/OneCreateGame" onClick={handleGameNavigation}>
+                العب
+              </Link>
+            </li>
+            <li>
+              <Link to="/Contact" onClick={() => setIsOpen(false)}>
+                تواصل معنا
+              </Link>
+            </li>
           </ul>
 
           {/* Mobile Toggle */}
@@ -127,7 +145,7 @@ const Navbar = () => {
                   style={{
                     position: 'absolute',
                     top: '100%',
-                    right: '0',
+                    left: '0',
                     backgroundColor: 'white',
                     border: '1px solid #ddd',
                     borderRadius: '8px',
