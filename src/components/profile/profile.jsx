@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import userService from "../../services/userService";
 
 const Profile = ({ user }) => {
   const navigate = useNavigate();
@@ -12,6 +13,9 @@ const Profile = ({ user }) => {
     newPassword: '',
     confirmPassword: ''
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+  const [errors, setErrors] = useState({});
 
   // Handle logout
   const handleLogout = () => {
@@ -62,15 +66,101 @@ const Profile = ({ user }) => {
     }));
   };
 
-  const handleSave = () => {
+  const validatePasswordData = () => {
+    const newErrors = {};
     
-    setIsEditing(false);
-    setIsChangingPassword(false);
-    setPasswordData({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    });
+    if (!passwordData.currentPassword) {
+      newErrors.currentPassword = 'كلمة المرور الحالية مطلوبة';
+    }
+    
+    if (!passwordData.newPassword) {
+      newErrors.newPassword = 'كلمة المرور الجديدة مطلوبة';
+    } else if (passwordData.newPassword.length < 6) {
+      newErrors.newPassword = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+    }
+    
+    if (!passwordData.confirmPassword) {
+      newErrors.confirmPassword = 'تأكيد كلمة المرور مطلوب';
+    } else if (passwordData.newPassword !== passwordData.confirmPassword) {
+      newErrors.confirmPassword = 'كلمة المرور غير متطابقة';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validatePasswordData()) {
+      return;
+    }
+    
+    setIsLoading(true);
+    setMessage({ type: '', text: '' });
+    
+    try {
+      const requestData = {
+        old_password: passwordData.currentPassword,
+        new_password: passwordData.newPassword,
+        new_password_confirmation: passwordData.confirmPassword
+      };
+      
+      await userService.resetPassword(requestData);
+      
+      setMessage({ type: 'success', text: 'تم تغيير كلمة المرور بنجاح' });
+      
+      // إعادة تعيين النموذج
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setErrors({});
+      
+      // إخفاء الرسالة بعد 3 ثوان
+      setTimeout(() => {
+        setMessage({ type: '', text: '' });
+        setIsEditing(false);
+      }, 3000);
+      
+    } catch (error) {
+      console.error('خطأ في تغيير كلمة المرور:', error);
+      console.error('تفاصيل الخطأ:', error.response?.data);
+      console.error('أخطاء التحقق:', error.response?.data?.errors);
+      console.error('البيانات المرسلة:', requestData);
+      
+      let errorMessage = 'حدث خطأ أثناء تغيير كلمة المرور';
+      
+      if (error.response?.data?.errors) {
+        // معالجة أخطاء التحقق المتعددة
+        const errors = error.response.data.errors;
+        console.log('Errors object:', errors);
+        
+        const errorMessages = [];
+        Object.keys(errors).forEach(key => {
+          if (Array.isArray(errors[key])) {
+            errorMessages.push(...errors[key]);
+          } else {
+            errorMessages.push(errors[key]);
+          }
+        });
+        
+        if (errorMessages.length > 0) {
+          errorMessage = errorMessages.join(' • ');
+        }
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response?.status === 401) {
+        errorMessage = 'كلمة المرور الحالية غير صحيحة';
+      } else if (error.response?.status === 422) {
+        errorMessage = 'البيانات المدخلة غير صحيحة - تأكد من صحة كلمة المرور الحالية';
+      }
+      
+      setMessage({ type: 'error', text: errorMessage });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCancel = () => {
@@ -82,6 +172,8 @@ const Profile = ({ user }) => {
       newPassword: '',
       confirmPassword: ''
     });
+    setErrors({});
+    setMessage({ type: '', text: '' });
   };
 
   return (
@@ -147,6 +239,21 @@ const Profile = ({ user }) => {
               </button>
             </div>
 
+            {/* Message Display */}
+            {message.text && (
+              <div className={`message ${message.type}`} style={{
+                padding: '12px',
+                borderRadius: '8px',
+                marginBottom: '20px',
+                textAlign: 'center',
+                backgroundColor: message.type === 'success' ? '#d4edda' : '#f8d7da',
+                color: message.type === 'success' ? '#155724' : '#721c24',
+                border: `1px solid ${message.type === 'success' ? '#c3e6cb' : '#f5c6cb'}`
+              }}>
+                {message.text}
+              </div>
+            )}
+
             {/* Form Fields */}
             <div className="profile-fields">
               
@@ -207,9 +314,14 @@ const Profile = ({ user }) => {
                       value={passwordData.currentPassword}
                       onChange={(e) => handlePasswordChange('currentPassword', e.target.value)}
                       placeholder="أدخل كلمة المرور الحالية"
-                      className="editing"
+                      className={`editing ${errors.currentPassword ? 'error' : ''}`}
                     />
                     <span className="field-icon"><i className="fas fa-lock"></i></span>
+                    {errors.currentPassword && (
+                      <span className="error-message" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                        {errors.currentPassword}
+                      </span>
+                    )}
                   </div>
                   
                   <div className="profile-field">
@@ -218,10 +330,15 @@ const Profile = ({ user }) => {
                       type="password"
                       value={passwordData.newPassword}
                       onChange={(e) => handlePasswordChange('newPassword', e.target.value)}
-                      placeholder="أدخل كلمة المرور الجديدة"
-                      className="editing"
+                      placeholder="أدخل كلمة المرور الجديدة (6 أحرف على الأقل)"
+                      className={`editing ${errors.newPassword ? 'error' : ''}`}
                     />
                     <span className="field-icon"><i className="fas fa-key"></i></span>
+                    {errors.newPassword && (
+                      <span className="error-message" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                        {errors.newPassword}
+                      </span>
+                    )}
                   </div>
                   
                   <div className="profile-field">
@@ -231,9 +348,14 @@ const Profile = ({ user }) => {
                       value={passwordData.confirmPassword}
                       onChange={(e) => handlePasswordChange('confirmPassword', e.target.value)}
                       placeholder="أعد إدخال كلمة المرور الجديدة"
-                      className="editing"
+                      className={`editing ${errors.confirmPassword ? 'error' : ''}`}
                     />
                     <span className="field-icon"><i className="fas fa-check"></i></span>
+                    {errors.confirmPassword && (
+                      <span className="error-message" style={{ color: '#dc3545', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                        {errors.confirmPassword}
+                      </span>
+                    )}
                   </div>
                 </>
               )}
@@ -243,11 +365,30 @@ const Profile = ({ user }) => {
             <div className="profile-actions">
               {isEditing ? (
                 <>
-                  <button className="btn btn-save" onClick={handleSave}>
-                    <i className="fas fa-save"></i>
-                    حفظ التغييرات
+                  <button 
+                    className="btn btn-save" 
+                    onClick={handleSave}
+                    disabled={isLoading}
+                    style={{ opacity: isLoading ? 0.6 : 1, cursor: isLoading ? 'not-allowed' : 'pointer' }}
+                  >
+                    {isLoading ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin"></i>
+                        جاري الحفظ...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-save"></i>
+                        حفظ التغييرات
+                      </>
+                    )}
                   </button>
-                  <button className="btn btn-cancel" onClick={handleCancel}>
+                  <button 
+                    className="btn btn-cancel" 
+                    onClick={handleCancel}
+                    disabled={isLoading}
+                    style={{ opacity: isLoading ? 0.6 : 1, cursor: isLoading ? 'not-allowed' : 'pointer' }}
+                  >
                     <i className="fas fa-times"></i>
                     إلغاء
                   </button>

@@ -14,6 +14,8 @@ import CountryCreate from "./countries/CountryCreate";
 import QuestionShow from "./questions/QuestionShow";
 import QuestionEdit from "./questions/QuestionEdit";
 import QuestionCreate from "./questions/QuestionCreate";
+import ContactUs from "./contact/ContactUs";
+import ContactCreate from "./contact/ContactCreate";
 
 
 
@@ -98,6 +100,10 @@ const DashRoutes = () => {
       <Route path="questions" element={<QuestionShow />} />
       <Route path="questions/create" element={<QuestionCreate />} />
       <Route path="questions/edit/:id" element={<QuestionEdit />} />
+
+      {/* Contact Management Routes */}
+      <Route path="contact" element={<ContactUs />} />
+      <Route path="contact/create" element={<ContactCreate />} />
     </Routes>
   );
 };

@@ -257,6 +257,7 @@ export default class ApiFunctions {
   getWithPagination = async (
     pageNumber,
     searchTerm = "",
+    additionalParams = {},
     { withAuth = true, useCredentials = false } = {}
   ) => {
     try {
@@ -264,6 +265,13 @@ export default class ApiFunctions {
       if (searchTerm.trim() !== "") {
         url += `&search=${encodeURIComponent(searchTerm)}`;
       }
+      
+      // إضافة المعاملات الإضافية مثل status
+      Object.keys(additionalParams).forEach(key => {
+        if (additionalParams[key] !== undefined && additionalParams[key] !== null) {
+          url += `&${key}=${encodeURIComponent(additionalParams[key])}`;
+        }
+      });
       
       return await apiClient.get(url, {
         withCredentials: useCredentials,

@@ -3531,6 +3531,9 @@ label {
   .winner-modal-actions button {
     min-width: auto;
   }
+  .media-container{
+    width: 250px!important;
+  }
 }
 
 /* العدّاد العلوي في المنتصف */

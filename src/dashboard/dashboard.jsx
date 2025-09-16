@@ -152,6 +152,15 @@ const Dashboard = () => {
               </li>
               <li>
                 <Link 
+                  to="/dashboard/contact" 
+                  className={location.pathname.includes('/dashboard/contact') ? 'active' : ''}
+                >
+                  <i className="icon-users"></i>
+                  <span>تواصل معنا</span>
+                </Link>
+              </li>
+              <li>
+                <Link 
                   to="/dashboard/users" 
                   className={location.pathname.includes('/dashboard/users') ? 'active' : ''}
                 >

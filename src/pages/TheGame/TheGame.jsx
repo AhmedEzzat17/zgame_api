@@ -506,7 +506,7 @@ function TheGame() {
           <div className="question-area">
             {/* عرض الوسائط إذا كانت متوفرة */}
             {questionData && questionData.media_url && (
-              <div className="media-container" style={{ marginBottom: '20px', textAlign: 'center' }}>
+              <div className="media-container" style={{ marginBottom: '20px', textAlign: 'center', width: '350px' }}>
                 {questionData.media_url && questionData.media_mime && questionData.media_mime.startsWith('image') && (
                   <img 
                     src={(() => {
