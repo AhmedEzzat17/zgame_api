@@ -83,78 +83,92 @@ class questionsService extends ApiFunctions {
 
   // دالة للحصول على سؤال عشوائي حسب القسم والنقاط
   getRandomByCategoryAndPoints = async (categoryId, points, { withAuth = true, useCredentials = false } = {}) => {
+    console.log(`🔍 طلب سؤال: القسم ${categoryId}, النقاط ${points}`);
+    
+    // استخدام الـ fallback مباشرة بدلاً من محاولة API الأصلي
     try {
-      // جرب الـ API الأصلي أولاً
-      return await this.apiClient.get(`${this.endpoint}/random/category/${categoryId}/points/${points}`, {
+      console.log('📡 جلب جميع الأسئلة من API...');
+      const allQuestionsResponse = await this.apiClient.get(`${this.endpoint}`, {
         withCredentials: useCredentials,
       });
-    } catch (error) {
       
-      // إذا فشل، جرب الحصول على جميع الأسئلة وفلترها
-      try {
-        // جرب الحصول على جميع الأسئلة أولاً
-        const allQuestionsResponse = await this.apiClient.get(`${this.endpoint}`, {
-          withCredentials: useCredentials,
+      console.log('📊 استجابة API:', allQuestionsResponse.data);
+      
+      if (allQuestionsResponse.data && allQuestionsResponse.data.data) {
+        let allQuestions = allQuestionsResponse.data.data;
+        
+        // التأكد من أن البيانات عبارة عن array
+        if (!Array.isArray(allQuestions)) {
+          if (allQuestions.questions && Array.isArray(allQuestions.questions)) {
+            allQuestions = allQuestions.questions;
+          } else if (allQuestions.data && Array.isArray(allQuestions.data)) {
+            allQuestions = allQuestions.data;
+          } else {
+            console.error('❌ البيانات المرجعة ليست في الصيغة المتوقعة:', allQuestions);
+            throw new Error('البيانات المرجعة من API ليست في الصيغة المتوقعة');
+          }
+        }
+        
+        console.log(`📋 إجمالي الأسئلة المتوفرة: ${allQuestions.length}`);
+        
+        // فلترة الأسئلة حسب القسم والنقاط
+        const filteredQuestions = allQuestions.filter(q => {
+          const matchesCategory = q.category_id == categoryId || q.categories?.some(cat => cat.id == categoryId);
+          const matchesPoints = q.points == points;
+          console.log(`🔍 فحص السؤال ${q.id}: القسم ${q.category_id}, النقاط ${q.points}, مطابق للقسم: ${matchesCategory}, مطابق للنقاط: ${matchesPoints}`);
+          return matchesCategory && matchesPoints;
         });
         
+        console.log(`✅ الأسئلة المفلترة: ${filteredQuestions.length} سؤال`);
         
-        if (allQuestionsResponse.data && allQuestionsResponse.data.data) {
-          let allQuestions = allQuestionsResponse.data.data;
+        // فحص أنواع الوسائط المتوفرة
+        const mediaTypes = allQuestions.map(q => ({
+          id: q.id,
+          type: q.type,
+          media_mime: q.media_mime,
+          has_media: !!q.question_media_url
+        })).filter(q => q.has_media);
+        
+        
+        if (filteredQuestions.length > 0) {
+          // اختيار سؤال عشوائي من النتائج المفلترة
+          const randomIndex = Math.floor(Math.random() * filteredQuestions.length);
+          const randomQuestion = filteredQuestions[randomIndex];
           
-          // التأكد من أن البيانات عبارة عن array
-          if (!Array.isArray(allQuestions)) {
-            // إذا كانت البيانات object، جرب الحصول على questions منها
-            if (allQuestions.questions && Array.isArray(allQuestions.questions)) {
-              allQuestions = allQuestions.questions;
-            } else if (allQuestions.data && Array.isArray(allQuestions.data)) {
-              allQuestions = allQuestions.data;
-            } else {
-              throw new Error('البيانات المرجعة من API ليست في الصيغة المتوقعة');
+          console.log('🎯 السؤال المختار:', randomQuestion);
+          
+          // إرجاع البيانات بنفس تنسيق الـ API الأصلي
+          return {
+            data: {
+              data: randomQuestion
             }
-          }
-          
-          
-          // فلترة الأسئلة حسب القسم والنقاط
-          const filteredQuestions = allQuestions.filter(q => {
-            const matchesCategory = q.category_id == categoryId || q.categories?.some(cat => cat.id == categoryId);
-            const matchesPoints = q.points == points;
-            return matchesCategory && matchesPoints;
-          });
-          
-          
-          if (filteredQuestions.length > 0) {
-            // اختيار سؤال عشوائي من النتائج المفلترة
-            const randomIndex = Math.floor(Math.random() * filteredQuestions.length);
-            const randomQuestion = filteredQuestions[randomIndex];
+          };
+        } else {
+          console.log('⚠️ لم توجد أسئلة مطابقة، اختيار سؤال عشوائي من أي قسم...');
+          // إذا لم توجد أسئلة مطابقة، اختر سؤال عشوائي من أي قسم
+          if (allQuestions.length > 0) {
+            const randomIndex = Math.floor(Math.random() * allQuestions.length);
+            const randomQuestion = allQuestions[randomIndex];
             
+            console.log('🎲 السؤال العشوائي المختار:', randomQuestion);
             
-            // إرجاع البيانات بنفس تنسيق الـ API الأصلي
             return {
               data: {
                 data: randomQuestion
               }
             };
           } else {
-            // إذا لم توجد أسئلة مطابقة، اختر سؤال عشوائي من أي قسم
-            if (allQuestions.length > 0) {
-              const randomIndex = Math.floor(Math.random() * allQuestions.length);
-              const randomQuestion = allQuestions[randomIndex];
-              
-              return {
-                data: {
-                  data: randomQuestion
-                }
-              };
-            } else {
-              throw new Error('No questions found in database');
-            }
+            console.error('❌ لا توجد أسئلة في قاعدة البيانات');
+            throw new Error('No questions found in database');
           }
-        } else {
-          throw new Error('Invalid response format from questions API');
         }
-      } catch (fallbackError) {
-        throw fallbackError;
+      } else {
+        console.error('❌ تنسيق استجابة API غير صحيح:', allQuestionsResponse.data);
+        throw new Error('Invalid response format from questions API');
       }
+    } catch (error) {
+      console.error('❌ خطأ في جلب الأسئلة:', error);
+      throw error;
     }
   };
 }

@@ -21,8 +21,6 @@ orange */
 .navbar {
   background: #f2f2f2;
   border-bottom: 4px solid transparent;
-  /* background-image: linear-gradient(to right, red, orange); */
-  /* background: linear-gradient(135deg, rgba(255, 0, 0, 0.621), rgba(255, 166, 0, 0.676)); */
   background-origin: border-box;
 }
 
@@ -294,6 +292,7 @@ orange */
     width: 100%;
     display: flex;
     justify-content: flex-end;
+    text-decoration: none;
   }
 
   .user-dropdown {
@@ -2905,7 +2904,7 @@ label {
 }
 
 .activate-btn:hover {
-  background: #e0a800;
+  background: linear-gradient(135deg, orange 0%, red 100%);
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
 }
@@ -3232,6 +3231,7 @@ label {
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow-x: auto;
 }
 
 .question-text,
@@ -3944,6 +3944,10 @@ label {
   box-shadow: 0 8px 25px rgba(255, 69, 0, 0.4);
 }
 
+.profile-avatar-section a{
+  text-decoration: none;
+}
+
 /* Right Side - Information Section */
 .profile-info-section {
   background: white;
@@ -4578,3 +4582,4 @@ label {
 .mygames11-home-btn i {
   font-size: 1.2rem;
 }
+

@@ -12,7 +12,7 @@ const getInitialFavorites = () => {
 };
 
 export default function TwoCreateGame({
-  title = "ما نزل مؤخراً",
+  title = "",
   initiallyOpen = true,
   onSelect,
 }) {
@@ -119,7 +119,9 @@ export default function TwoCreateGame({
     return {
       id: country.id,
       name: country.name,
-      img: country.flag ? `https://appgames.fikriti.com/${country.flag}` : "images/download.webp"
+      // img: country.flag ? `https://appgames.fikriti.com/${country.flag}` : "images/download.webp"
+      img: country.flag ? `https://appgames.fikriti.com/${country.flag}` : ""
+      // img: country.flag ? `https://appgames.fikriti.com/${country.flag}` : null
     };
   });
 

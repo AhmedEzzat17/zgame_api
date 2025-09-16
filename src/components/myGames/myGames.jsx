@@ -8,7 +8,7 @@ const MyGames = () => {
   const sampleGames = [
     {
       id: 1,
-      title: "لعبة الرياضيات",
+      title: "اسم البطوله او اللعبه هنا ",
       description: "لعبة تفاعلية لتعلم الرياضيات بطريقة ممتعة",
       image: "/images/math-game.jpg",
       category: "تعليمي",
@@ -18,7 +18,7 @@ const MyGames = () => {
     },
     {
       id: 2,
-      title: "الكلمات",
+      title: "اسم البطوله او اللعبه هنا",
       description: "اختبر مهاراتك في اللغة العربية",
       image: "/images/word-game.jpg",
       category: "لغوي",
@@ -28,7 +28,7 @@ const MyGames = () => {
     },
     {
       id: 4,
-      title: "جغرافيا العالم",
+      title: "اسم البطوله او اللعبه هنا",
       description: "اكتشف دول وعواصم العالم",
       image: "/images/geography-game.jpg",
       category: "جغرافيا",

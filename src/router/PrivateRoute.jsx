@@ -7,13 +7,12 @@ const getUserFromStorage = () => {
     const userData = localStorage.getItem("user");
     if (!userData) return null;
     const parsed = JSON.parse(userData);
-    // فك تشفير الدور لو موجود
-    if (parsed.role) {
-      parsed.role = decryptData(parsed.role);
+    
+    // التحقق من صلاحيات الأدمن
+    if (parsed.user?.isAdmin) {
+      return { ...parsed, role: "admin" };
     }
-    if (parsed.user?.role) {
-      parsed.user.role = decryptData(parsed.user.role);
-    }
+    
     return parsed;
   } catch {
     return null;

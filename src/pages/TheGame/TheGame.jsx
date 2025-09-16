@@ -8,10 +8,12 @@ function TheGame() {
   const { categoryId, value } = useParams();
   const navigate = useNavigate();
 
+  const [selectedOption, setSelectedOption] = useState(null);
   const [showAnswer, setShowAnswer] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [currentTeam, setCurrentTeam] = useState("الفريق الأول");
   const [showCallFriend, setShowCallFriend] = useState(false);
+  const [selectedAnswers, setSelectedAnswers] = useState({});
 
   const [hudTime, setHudTime] = useState(0);
   const [hudRunning, setHudRunning] = useState(false);
@@ -33,6 +35,30 @@ function TheGame() {
   const [team2Score, setTeam2Score] = useState(0);
   const [currentTurn, setCurrentTurn] = useState(1); // 1 for team1, 2 for team2
   const [showWinnerModal, setShowWinnerModal] = useState(false);
+
+  // Load selected answers from localStorage
+  useEffect(() => {
+    const savedAnswers = localStorage.getItem("selectedAnswers");
+    if (savedAnswers) {
+      setSelectedAnswers(JSON.parse(savedAnswers));
+    }
+  }, []);
+
+  // Save selected answers to localStorage
+  const saveSelectedAnswers = (answers) => {
+    localStorage.setItem("selectedAnswers", JSON.stringify(answers));
+    setSelectedAnswers(answers);
+  };
+
+  // Handle option selection
+  const handleOptionSelect = (option, index, questionId) => {
+    const questionKey = `${categoryId}_${value}`;
+    const newSelectedAnswers = {
+      ...selectedAnswers,
+      [questionKey]: { option, index }
+    };
+    saveSelectedAnswers(newSelectedAnswers);
+  };
 
   // Load game data and question from localStorage
   useEffect(() => {
@@ -91,12 +117,26 @@ function TheGame() {
           if (parsedQuestion.categoryId == categoryId && parsedQuestion.points == value) {
             const apiQuestion = parsedQuestion.question;
             
-            // Format API data
+            // Format API data with media and options support
             const formattedQuestion = {
               question: apiQuestion.question_text || apiQuestion.question || "سؤال غير متوفر",
-              answer: apiQuestion.correct_answer || apiQuestion.answer || "إجابة غير متوفرة"
+              answer: Array.isArray(apiQuestion.correct_answer) ? apiQuestion.correct_answer.join(', ') : (apiQuestion.correct_answer || apiQuestion.answer || "إجابة غير متوفرة"),
+              media_url: apiQuestion.question_media_url || null,
+              media_type: apiQuestion.type || null,
+              media_mime: apiQuestion.media_mime || null,
+              type: apiQuestion.question_type || apiQuestion.type || 'text',
+              options: [
+                apiQuestion.option_a,
+                apiQuestion.option_b, 
+                apiQuestion.option_c,
+                apiQuestion.option_d
+              ].filter(option => option && option.trim() !== '')
             };
             
+            console.log('Raw API Question from localStorage:', apiQuestion);
+            console.log('Question Data from localStorage:', formattedQuestion);
+            console.log('Question Type:', formattedQuestion.type);
+            console.log('Question Options:', formattedQuestion.options);
             setQuestionData(formattedQuestion);
           } else {
             // Question doesn't match, try to fetch from API directly
@@ -116,12 +156,26 @@ function TheGame() {
             if (response.data && response.data.data) {
               const apiQuestion = response.data.data;
               
-              // Format API data
+              // Format API data with media and options support
               const formattedQuestion = {
                 question: apiQuestion.question_text || apiQuestion.question || "سؤال غير متوفر",
-                answer: apiQuestion.correct_answer || apiQuestion.answer || "إجابة غير متوفرة"
+                answer: Array.isArray(apiQuestion.correct_answer) ? apiQuestion.correct_answer.join(', ') : (apiQuestion.correct_answer || apiQuestion.answer || "إجابة غير متوفرة"),
+                media_url: apiQuestion.question_media_url || null,
+                media_type: apiQuestion.type || null,
+                media_mime: apiQuestion.media_mime || null,
+                type: apiQuestion.question_type || apiQuestion.type || 'text',
+                options: [
+                apiQuestion.option_a,
+                apiQuestion.option_b, 
+                apiQuestion.option_c,
+                apiQuestion.option_d
+              ].filter(option => option && option.trim() !== '')
               };
               
+              console.log('Raw API Question from API:', apiQuestion);
+              console.log('Question Data from API:', formattedQuestion);
+              console.log('Question Type:', formattedQuestion.type);
+              console.log('Question Options:', formattedQuestion.options);
               setQuestionData(formattedQuestion);
               
               // Save to localStorage for future use
@@ -450,10 +504,289 @@ function TheGame() {
 
         <div className="game-box">
           <div className="question-area">
+            {/* عرض الوسائط إذا كانت متوفرة */}
+            {questionData && questionData.media_url && (
+              <div className="media-container" style={{ marginBottom: '20px', textAlign: 'center' }}>
+                {questionData.media_url && questionData.media_mime && questionData.media_mime.startsWith('image') && (
+                  <img 
+                    src={(() => {
+                      const baseUrl = 'https://appgames.fikriti.com';
+                      const mediaUrl = questionData.media_url;
+                      
+                      if (mediaUrl.startsWith('http')) {
+                        return mediaUrl;
+                      }
+                      
+                      // ابدأ بالمسار الأكثر احتمالاً للعمل
+                      return `${baseUrl}/storage/${mediaUrl}`;
+                    })()}
+                    alt="صورة السؤال"
+                    style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px' }}
+                    onError={(e) => {
+                      // تجربة مسارات بديلة بدون console.log متكرر
+                      const baseUrl = 'https://appgames.fikriti.com';
+                      const mediaUrl = questionData.media_url;
+                      const possiblePaths = [
+                        `${baseUrl}/storage/${mediaUrl}`,
+                        `${baseUrl}/public/storage/${mediaUrl}`,
+                        `${baseUrl}/${mediaUrl}`,
+                        `${baseUrl}/uploads/${mediaUrl}`,
+                        `${baseUrl}/images/${mediaUrl}`
+                      ];
+                      
+                      const currentIndex = possiblePaths.findIndex(path => path === e.target.src);
+                      const nextIndex = currentIndex + 1;
+                      
+                      if (nextIndex < possiblePaths.length) {
+                        e.target.src = possiblePaths[nextIndex];
+                      } else {
+                        e.target.style.display = 'none';
+                        const container = e.target.parentElement;
+                        if (container && !container.querySelector('.image-error-message')) {
+                          const errorDiv = document.createElement('div');
+                          errorDiv.className = 'image-error-message';
+                          errorDiv.style.cssText = 'padding: 20px; background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; text-align: center; color: #6c757d;';
+                          errorDiv.innerHTML = '📷 لا يمكن عرض الصورة<br><small>الملف غير متوفر على الخادم</small>';
+                          container.appendChild(errorDiv);
+                        }
+                      }
+                    }}
+                    onLoad={() => {
+                      // تم تحميل الصورة بنجاح - بدون console.log
+                    }}
+                  />
+                )}
+                {questionData.media_url && questionData.media_mime && (questionData.media_mime.startsWith('audio') || questionData.media_mime.includes('audio')) && (
+                  <div style={{ 
+                    marginTop: '20px', 
+                    padding: '20px', 
+                    backgroundColor: '#f8f9fa', 
+                    borderRadius: '12px',
+                    border: '2px solid #e9ecef'
+                  }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      marginBottom: '15px',
+                      fontSize: '18px',
+                      fontWeight: '600',
+                      color: '#495057'
+                    }}>
+                      🎵 ملف صوتي
+                    </div>
+                    <audio 
+                      controls 
+                      style={{ 
+                        width: '100%', 
+                        height: '50px',
+                        borderRadius: '8px'
+                      }}
+                      src={(() => {
+                        const baseUrl = 'https://appgames.fikriti.com';
+                        const mediaUrl = questionData.media_url;
+                        
+                        if (mediaUrl.startsWith('http')) {
+                          return mediaUrl;
+                        }
+                        
+                        return `${baseUrl}/storage/${mediaUrl}`;
+                      })()}
+                      onError={(e) => {
+                        const baseUrl = 'https://appgames.fikriti.com';
+                        const mediaUrl = questionData.media_url;
+                        const possiblePaths = [
+                          `${baseUrl}/storage/${mediaUrl}`,
+                          `${baseUrl}/public/storage/${mediaUrl}`,
+                          `${baseUrl}/${mediaUrl}`,
+                          `${baseUrl}/uploads/${mediaUrl}`,
+                          `${baseUrl}/images/${mediaUrl}`
+                        ];
+                        
+                        const currentIndex = possiblePaths.findIndex(path => path === e.target.src);
+                        const nextIndex = currentIndex + 1;
+                        
+                        if (nextIndex < possiblePaths.length) {
+                          e.target.src = possiblePaths[nextIndex];
+                        } else {
+                          e.target.style.display = 'none';
+                          const container = e.target.parentElement;
+                          if (container && !container.querySelector('.audio-error-message')) {
+                            const errorDiv = document.createElement('div');
+                            errorDiv.className = 'audio-error-message';
+                            errorDiv.style.cssText = 'padding: 15px; background: #fff3cd; border: 2px dashed #ffc107; border-radius: 8px; text-align: center; color: #856404; margin-top: 10px;';
+                            errorDiv.innerHTML = '⚠️ لا يمكن تشغيل الملف الصوتي<br><small>الملف غير متوفر على الخادم</small>';
+                            container.appendChild(errorDiv);
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+                {questionData.media_url && questionData.media_mime && (questionData.media_mime.startsWith('video') || questionData.media_mime.includes('video')) && (
+                  <video 
+                    controls 
+                    style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px' }}
+                    src={(() => {
+                      const baseUrl = 'https://appgames.fikriti.com';
+                      const mediaUrl = questionData.media_url;
+                      
+                      if (mediaUrl.startsWith('http')) {
+                        return mediaUrl;
+                      }
+                      
+                      return `${baseUrl}/storage/${mediaUrl}`;
+                    })()}
+                    onError={(e) => {
+                      const baseUrl = 'https://appgames.fikriti.com';
+                      const mediaUrl = questionData.media_url;
+                      const possiblePaths = [
+                        `${baseUrl}/storage/${mediaUrl}`,
+                        `${baseUrl}/public/storage/${mediaUrl}`,
+                        `${baseUrl}/${mediaUrl}`,
+                        `${baseUrl}/uploads/${mediaUrl}`,
+                        `${baseUrl}/images/${mediaUrl}`
+                      ];
+                      
+                      const currentIndex = possiblePaths.findIndex(path => path === e.target.src);
+                      const nextIndex = currentIndex + 1;
+                      
+                      if (nextIndex < possiblePaths.length) {
+                        e.target.src = possiblePaths[nextIndex];
+                      } else {
+                        e.target.style.display = 'none';
+                        const container = e.target.parentElement;
+                        if (container && !container.querySelector('.video-error-message')) {
+                          const errorDiv = document.createElement('div');
+                          errorDiv.className = 'video-error-message';
+                          errorDiv.style.cssText = 'padding: 20px; background: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 8px; text-align: center; color: #6c757d;';
+                          errorDiv.innerHTML = '🎬 لا يمكن تشغيل الفيديو<br><small>الملف غير متوفر على الخادم</small>';
+                          container.appendChild(errorDiv);
+                        }
+                      }
+                    }}
+                  />
+                )}
+              </div>
+            )}
+            
+            
             {showAnswer ? (
               <h2 className="answer-text">{questionData.answer}</h2>
             ) : (
-              <h2 className="question-text">{questionData.question}</h2>
+              <div>
+                <h2 className="question-text">{questionData.question}</h2>
+                
+                {/* عرض خيارات الاختيار من متعدد فقط للأسئلة نوع MCQ */}
+                {(() => {
+                  console.log('Full questionData object:', JSON.stringify(questionData, null, 2));
+                  
+                  // إنشاء خيارات افتراضية للأسئلة MCQ إذا لم توجد
+                  if (questionData?.type === 'mcq' && (!questionData.options || questionData.options.length === 0)) {
+                    console.log('MCQ question without options - creating default options');
+                    // إنشاء خيارات افتراضية بناءً على الإجابة الصحيحة
+                    const correctAnswer = questionData.answer;
+                    const defaultOptions = [
+                      correctAnswer,
+                      'خيار ب',
+                      'خيار ج', 
+                      'خيار د'
+                    ];
+                    questionData.options = defaultOptions;
+                    console.log('Created default options:', defaultOptions);
+                  }
+                  
+                  return questionData?.type === 'mcq' && questionData?.options && Array.isArray(questionData.options) && questionData.options.length > 0;
+                })() && (
+                  <div className="question-options" style={{ 
+                    marginTop: '30px',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    gap: '15px',
+                    width: '100%'
+                  }}>
+                    {questionData.options.map((option, index) => {
+                      const questionKey = `${categoryId}_${value}`;
+                      const isSelected = selectedAnswers[questionKey]?.index === index;
+                      const isCorrect = option === questionData.answer;
+                      
+                      return (
+                        <div 
+                          key={index} 
+                          className="option-item" 
+                          style={{
+                            padding: '18px 25px',
+                            background: isSelected 
+                              ? 'linear-gradient(to bottom, #ff6b35, orange)' 
+                              : '#ffffff',
+                            border: `2px solid ${isSelected 
+                              ? '#ff6b35' 
+                              : '#f0f0f0'}`,
+                            borderRadius: '15px',
+                            cursor: 'pointer',
+                            fontSize: '20px',
+                            fontWeight: '600',
+                            color: isSelected ? '#ffffff' : '#333333',
+                            transition: 'all 0.3s ease',
+                            boxShadow: isSelected 
+                              ? '0 6px 20px rgba(255,107,53,0.4)' 
+                              : '0 2px 8px rgba(0,0,0,0.05)',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'flex-start',
+                            textAlign: 'right',
+                            direction: 'rtl',
+                            transform: isSelected ? 'translateY(-3px)' : 'translateY(0)'
+                          }}
+                          onClick={() => handleOptionSelect(option, index)}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) {
+                              e.target.style.background = 'linear-gradient(to bottom, #f8f9fa, #e9ecef)';
+                              e.target.style.borderColor = '#dee2e6';
+                              e.target.style.color = '#495057';
+                              e.target.style.transform = 'translateY(-2px)';
+                              e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected) {
+                              e.target.style.background = '#ffffff';
+                              e.target.style.borderColor = '#f0f0f0';
+                              e.target.style.color = '#333333';
+                              e.target.style.transform = 'translateY(0)';
+                              e.target.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
+                            }
+                          }}
+                        >
+                          <span style={{
+                            display: 'inline-flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            width: '40px',
+                            height: '40px',
+                            backgroundColor: isSelected 
+                              ? '#ffffff'
+                              : '#28a745',
+                            color: isSelected ? '#ff6b35' : 'white',
+                            borderRadius: '50%',
+                            marginLeft: '15px',
+                            fontSize: '18px',
+                            fontWeight: 'bold',
+                            flexShrink: 0,
+                            transition: 'all 0.3s ease'
+                          }}>
+                            {String.fromCharCode(65 + index)}
+                          </span>
+                          <span style={{ flex: 1, textAlign: 'right' }}>
+                            {option}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             )}
             {!showAnswer && (
               <button className="show-btn" onClick={handleShowAnswer}>

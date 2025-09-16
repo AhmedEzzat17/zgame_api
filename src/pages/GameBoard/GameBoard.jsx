@@ -37,7 +37,7 @@ const defaultCategories = [
   },
 ];
 
-const values = [200, 400, 600];
+const values = [200, 400,600];
 
 export default function GameBoard() {
   const navigate = useNavigate();

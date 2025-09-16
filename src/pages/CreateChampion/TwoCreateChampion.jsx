@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 function TwoCreateChampion() {
   const [selectedTeams, setSelectedTeams] = useState(4);
   const [tournamentName, setTournamentName] = useState("");
   const [teamNames, setTeamNames] = useState(Array(4).fill(""));
+  const [lastTeamNames, setLastTeamNames] = useState(Array(4).fill(""));
   const [errors, setErrors] = useState({ tournamentName: "", teamNames: [] });
   const navigate = useNavigate();
 
@@ -20,9 +21,47 @@ function TwoCreateChampion() {
     }
   };
 
+  // تحميل آخر أسماء فرق محفوظة عند تحميل الصفحة
+  useEffect(() => {
+    const savedTeamNames = localStorage.getItem("lastTeamNames");
+    const savedTournamentName = localStorage.getItem("lastTournamentName");
+    
+    if (savedTeamNames) {
+      try {
+        const parsedNames = JSON.parse(savedTeamNames);
+        setLastTeamNames(parsedNames);
+        // إذا كان عدد الفرق مطابق، استخدم الأسماء المحفوظة
+        if (parsedNames.length === selectedTeams) {
+          setTeamNames([...parsedNames]);
+        }
+      } catch (e) {
+        // console.log("خطأ في تحميل أسماء الفرق المحفوظة");
+      }
+    }
+    
+    if (savedTournamentName) {
+      setTournamentName(savedTournamentName);
+    }
+  }, []);
+
   const handleTeamsChange = (num) => {
     setSelectedTeams(num);
-    setTeamNames(Array(num).fill(""));
+    
+    // إذا كان لدينا أسماء محفوظة بنفس العدد، استخدمها
+    if (lastTeamNames.length === num) {
+      setTeamNames([...lastTeamNames]);
+    } else {
+      // إنشاء array جديد بالعدد المطلوب
+      const newTeamNames = Array(num).fill("");
+      // نسخ الأسماء المحفوظة إذا كانت متاحة
+      for (let i = 0; i < Math.min(num, lastTeamNames.length); i++) {
+        if (lastTeamNames[i]) {
+          newTeamNames[i] = lastTeamNames[i];
+        }
+      }
+      setTeamNames(newTeamNames);
+    }
+    
     setErrors({ tournamentName: "", teamNames: [] });
   };
 
@@ -64,6 +103,10 @@ function TwoCreateChampion() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
+      // حفظ آخر أسماء فرق واسم بطولة لاستخدامها في المرات القادمة
+      localStorage.setItem("lastTeamNames", JSON.stringify(teamNames));
+      localStorage.setItem("lastTournamentName", tournamentName);
+      
       // حفظ بيانات البطولة في localStorage
       const tournamentData = {
         tournamentName,
@@ -93,7 +136,7 @@ function TwoCreateChampion() {
       <div className="team-input-item" key={i}>
         <input
           type="text"
-          placeholder={`Team ${i + 1}`}
+          placeholder={lastTeamNames[i] || `فريق ${i + 1}`}
           value={name}
           onChange={(e) => handleTeamNameChange(i, e.target.value)}
           required
