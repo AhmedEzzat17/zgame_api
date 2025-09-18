@@ -606,3 +606,12 @@
   display: flex;
   justify-content: center;
 }
+.modal-header .btn-close{
+  margin: calc(-.5 * var(--bs-modal-header-padding-x)) calc(-.5 * var(--bs-modal-header-padding-y)) auto !important;
+  /* color: #b0b0b0 !important; */
+  color: red !important;
+}
+.modal-header .btn-close:hover{
+  color: red !important;
+  background-color: red !important;
+}

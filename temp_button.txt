@@ -1,0 +1,27 @@
+              <button
+                className="activate-btn"
+                onClick={() => {
+                  // تحديث localStorage أولاً لضمان التفعيل الفوري
+                  const updatedHoleUsed = {
+                    ...holeUsed,
+                    [showHoleModal]: true
+                  };
+                  
+                  const completeGameData = localStorage.getItem("completeGameData");
+                  if (completeGameData) {
+                    const gameData = JSON.parse(completeGameData);
+                    if (gameData.gameInfo) {
+                      gameData.gameInfo.holeUsed = updatedHoleUsed;
+                      gameData.gameInfo.currentTeamUsingHole = showHoleModal;
+                      localStorage.setItem("completeGameData", JSON.stringify(gameData));
+                    }
+                  }
+
+                  // ثم تحديث state
+                  setHoleUsed(updatedHoleUsed);
+                  setCurrentTeamUsingHole(showHoleModal);
+                  setShowHoleModal(false);
+                }}
+              >
+                تفعيل
+              </button>

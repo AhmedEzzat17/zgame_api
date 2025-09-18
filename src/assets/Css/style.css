@@ -6,6 +6,26 @@
   /* border: 1px solid red; */
 }
 
+/* انيميشن للحفرة المفعلة */
+@keyframes holeGlow {
+  0% {
+    box-shadow: 0 8px 25px rgba(255, 107, 53, 0.6);
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    box-shadow: 0 12px 35px rgba(255, 107, 53, 0.9);
+    transform: translateX(-50%) scale(1.02);
+  }
+  100% {
+    box-shadow: 0 8px 25px rgba(255, 107, 53, 0.6);
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+.hole-indicator {
+  animation: holeGlow 2s ease-in-out infinite;
+}
+
 html,
 body {
   overflow-x: hidden !important;
@@ -1971,6 +1991,10 @@ label {
   .inline-fields {
     gap: 10px;
   }
+  .tournament-name{
+    display: none;
+  }
+
 }
 
 @media (max-width: 500px) {
@@ -2473,8 +2497,7 @@ label {
 .jeopardy-app {
   display: flex;
   flex-direction: column;
-  /* align-items: center; */
-  min-height: 100vh;
+  height: calc(100vh - 95px);
   background: var(--bg);
   padding: 20px;
   box-sizing: border-box;
@@ -2482,7 +2505,7 @@ label {
 
 .board {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 15px;
   flex-grow: 1;
 }
@@ -2951,6 +2974,12 @@ label {
 }
 
 /* Responsive design for return button */
+/* @media (min-width: 1201px) and (max-width: 1400px) {
+  .board {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  }
+} */
 @media (max-width: 768px) {
   .return-button {
     font-size: 16px;
@@ -3007,19 +3036,35 @@ label {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  /* إزالة التغيير في ترتيب العناصر - الحفاظ على الشكل الأصلي */
   .category {
-    flex-direction: column;
+    /* flex-direction: column; - تم إزالة هذا السطر */
+    padding: 6px;
+    gap: 6px;
   }
 
   .col {
-    flex-direction: row;
-    justify-content: space-evenly;
+    /* flex-direction: row; - تم إزالة هذا السطر */
+    /* justify-content: space-evenly; - تم إزالة هذا السطر */
+    gap: 6px;
   }
 
   .pill {
-    width: 30%;
-    height: 50px;
-    padding: 10px;
+    /* width: 30%; - تم إزالة هذا السطر */
+    height: 45px;
+    padding: 8px;
+  }
+  
+  .center-card {
+    height: 140px;
+  }
+  
+  .value-text {
+    font-size: 18px;
+  }
+  
+  .label {
+    font-size: 16px;
   }
 
   .helpers-inline h3 {
@@ -3037,53 +3082,175 @@ label {
   }
 }
 
-@media (min-width: 350px) and (max-width: 465px) {
+/* تحسين الـ responsive للشاشات الصغيرة 350px - 430px */
+@media (min-width: 350px) and (max-width: 430px) {
+  .jeopardy-app {
+    padding: 10px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .board {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    flex-grow: 1;
+    margin-bottom: 10px;
+  }
+  
+  .category {
+    padding: 4px;
+    gap: 4px;
+    border-radius: 8px;
+  }
+  
+  .center-card {
+    height: 120px;
+  }
+  
+  .image-wrap {
+    padding: 3px;
+    border-radius: 6px 6px 0 0;
+  }
+  
+  .label {
+    font-size: 14px;
+    padding: 3px;
+    border-radius: 0 0 6px 6px;
+  }
+  
+  .col {
+    gap: 4px;
+  }
+  
+  .pill {
+    height: 35px;
+    padding: 0px !important;
+    border-radius: 10px;
+    font-size: 10px !important;
+  }
+  
+  .value-text {
+    font-size: 16px;
+  }
+  
+  /* تحسين الفوتر للشاشات الصغيرة */
   .jeopardy-app .controls {
-    gap: 6px;
-    /* تقليل المسافة بين الفريقين */
-    padding: 6px;
+    position: sticky;
+    bottom: 0;
+    background: #dcdcdc;
+    padding: 8px 6px;
+    gap: 4px;
     flex-wrap: nowrap;
-    /* منع النزول تحت بعض */
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 8px;
+    margin-top: auto;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
   }
 
   .controls .team,
   .controls .team.team-right {
-    gap: 4px;
-    /* تقليل المسافة بين عناصر الفريق الواحد */
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    flex: 0 0 auto;
   }
 
   .team .name {
-    font-size: 12px;
-    padding: 4px 10px;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 12px;
+  }
+
+  .score-box {
+    gap: 2px;
   }
 
   .score-box .minus,
   .score-box .plus {
-    width: 26px;
-    height: 26px;
-    font-size: 14px;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
   }
 
   .score {
-    min-width: 30px;
-    font-size: 12px;
-    padding: 2px 4px;
+    min-width: 28px;
+    font-size: 11px;
+    padding: 2px 3px;
+    border-radius: 6px;
+  }
+
+  .helpers-inline {
+    gap: 3px;
   }
 
   .helpers-inline h3 {
-    font-size: 9px;
+    font-size: 8px;
+    margin: 0;
+  }
+
+  .helpers-inline .icons {
+    gap: 3px;
   }
 
   .helpers-inline .icon {
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+  }
+  
+  /* تحسين المودال للشاشات الصغيرة */
+  .hole-modal {
+    width: 95%;
+    max-width: 350px;
+  }
+  
+  .hole-modal-header {
+    padding: 15px;
+  }
+  
+  .hole-modal-header h3 {
+    font-size: 18px;
+  }
+  
+  .hole-modal-content {
+    padding: 20px 15px;
+  }
+  
+  .hole-modal-content p {
     font-size: 14px;
+  }
+  
+  .hole-modal-content li {
+    padding: 10px;
+    font-size: 13px;
+    margin: 8px 0;
+  }
+  
+  .hole-modal-actions {
+    padding: 15px;
+    gap: 10px;
+  }
+  
+  .cancel-btn, .activate-btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    min-width: 100px;
+  }
+  
+  /* تحسين زر العودة */
+  .return-button {
+    font-size: 14px;
+    padding: 12px 20px;
+    min-width: 200px;
+    border-radius: 10px;
   }
 }
 
+
 /* ##################################################################################### */
 /* TheGame */
-/* الحاوية الأساسية */
 .main-wrapper {
   display: flex;
   height: calc(100vh - 90px);
@@ -3136,7 +3303,7 @@ label {
 }
 
 .help-box .icon {
-  font-size: 30px;
+  font-size: 20px;
   margin-bottom: 5px;
 }
 
@@ -3685,7 +3852,7 @@ label {
 
   /* الأزرار جوا النافذة */
   .help-popup button {
-    font-size: 14px !important;
+    font-size: 10px !important;
     padding: 6px 0px;
     margin: 5px 0;
     width: 100%;

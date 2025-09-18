@@ -1121,6 +1121,7 @@
   border-radius: 5px;
   text-align: center;
   font-weight: bold;
+  background-color: #d4edda;
 }
 
 .alert.success {

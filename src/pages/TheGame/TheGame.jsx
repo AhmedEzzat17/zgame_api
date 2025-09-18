@@ -26,6 +26,9 @@ function TheGame() {
 
   const [questionData, setQuestionData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [holeActive, setHoleActive] = useState(false);
+  const [bonusPoints, setBonusPoints] = useState(0);
+  const [originalPoints, setOriginalPoints] = useState(0);
 
   // Game state from localStorage
   const [gameName, setGameName] = useState("لعبة المعلومات");
@@ -35,6 +38,10 @@ function TheGame() {
   const [team2Score, setTeam2Score] = useState(0);
   const [currentTurn, setCurrentTurn] = useState(1); // 1 for team1, 2 for team2
   const [showWinnerModal, setShowWinnerModal] = useState(false);
+  const [questionAnswered, setQuestionAnswered] = useState(false);
+  const [holeActivated, setHoleActivated] = useState(false);
+  const [holeTeam, setHoleTeam] = useState("");
+  const [holeSide, setHoleSide] = useState("");
 
   // Load selected answers from localStorage
   useEffect(() => {
@@ -58,6 +65,51 @@ function TheGame() {
       [questionKey]: { option, index }
     };
     saveSelectedAnswers(newSelectedAnswers);
+  };
+
+  // دالة لتحديد مفتاح localStorage للأسئلة المستخدمة
+  const getUsedQuestionsKey = () => {
+    const completeGameData = localStorage.getItem("completeGameData");
+    if (completeGameData) {
+      const gameData = JSON.parse(completeGameData);
+      const tournamentMatch = localStorage.getItem("currentTournamentMatch");
+      const tournamentData = localStorage.getItem("tournamentData");
+      
+      if (tournamentMatch && tournamentData) {
+        const tournament = JSON.parse(tournamentData);
+        if (tournament.isActive) {
+          return 'usedQuestionsTournament';
+        }
+      }
+    }
+    return 'usedQuestions';
+  };
+
+  // دالة لوضع علامة على السؤال كمستخدم (لن تستخدم هنا لأن العلامة توضع في GameBoard)
+  const markQuestionAsUsed = (categoryId, points, side) => {
+    const key = getUsedQuestionsKey();
+    const usedQuestions = JSON.parse(localStorage.getItem(key) || '[]');
+    const questionKey = `${categoryId}-${points}-${side}`; // تغيير التنسيق ليطابق GameBoard
+    
+    if (!usedQuestions.includes(questionKey)) {
+      usedQuestions.push(questionKey);
+      localStorage.setItem(key, JSON.stringify(usedQuestions));
+      console.log(`تم وضع علامة على السؤال ${questionKey} كمستخدم في ${key}`);
+    }
+  };
+
+  // دالة لإزالة علامة السؤال كمستخدم (عند الرجوع بدون إجابة)
+  const unmarkQuestionAsUsed = (categoryId, points, side) => {
+    const key = getUsedQuestionsKey();
+    const usedQuestions = JSON.parse(localStorage.getItem(key) || '[]');
+    const questionKey = `${categoryId}-${points}-${side}`; // تغيير التنسيق ليطابق GameBoard
+    
+    const index = usedQuestions.indexOf(questionKey);
+    if (index > -1) {
+      usedQuestions.splice(index, 1);
+      localStorage.setItem(key, JSON.stringify(usedQuestions));
+      console.log(`تم إزالة علامة السؤال ${questionKey} من ${key}`);
+    }
   };
 
   // Load game data and question from localStorage
@@ -108,16 +160,27 @@ function TheGame() {
           }
         }
         
-        // Load current question from localStorage first, then try API if needed
+        // Load question data from localStorage
         const currentQuestion = localStorage.getItem("currentQuestion");
         if (currentQuestion) {
-          const parsedQuestion = JSON.parse(currentQuestion);
+          const questionInfo = JSON.parse(currentQuestion);
+          setQuestionData(questionInfo.question);
           
-          // Check if question matches current parameters
-          if (parsedQuestion.categoryId == categoryId && parsedQuestion.points == value) {
-            const apiQuestion = parsedQuestion.question;
-            
-            // Format API data with media and options support
+          // تحميل معلومات الحفرة
+          if (questionInfo.holeActive) {
+            setHoleActive(true);
+            setBonusPoints(questionInfo.bonusPoints || 200);
+            setOriginalPoints(questionInfo.originalPoints || parseInt(value));
+            console.log(`الحفرة مفعلة! النقاط الأصلية: ${questionInfo.originalPoints}, البونس: ${questionInfo.bonusPoints}`);
+          } else {
+            setHoleActive(false);
+            setBonusPoints(0);
+            setOriginalPoints(parseInt(value));
+          }
+          
+          // تنسيق بيانات السؤال
+          if (questionInfo.question) {
+            const apiQuestion = questionInfo.question;
             const formattedQuestion = {
               question: apiQuestion.question_text || apiQuestion.question || "سؤال غير متوفر",
               answer: Array.isArray(apiQuestion.correct_answer) ? apiQuestion.correct_answer.join(', ') : (apiQuestion.correct_answer || apiQuestion.answer || "إجابة غير متوفرة"),
@@ -138,64 +201,12 @@ function TheGame() {
             console.log('Question Type:', formattedQuestion.type);
             console.log('Question Options:', formattedQuestion.options);
             setQuestionData(formattedQuestion);
-          } else {
-            // Question doesn't match, try to fetch from API directly
-            await fetchQuestionFromAPI();
           }
         } else {
-          // No question in localStorage, fetch from API directly
-          await fetchQuestionFromAPI();
+          console.log('No currentQuestion found in localStorage');
         }
         
-        // Function to fetch question directly from API
-        async function fetchQuestionFromAPI() {
-          try {
-            
-            const response = await questionsService.getRandomByCategoryAndPoints(categoryId, value);
-            
-            if (response.data && response.data.data) {
-              const apiQuestion = response.data.data;
-              
-              // Format API data with media and options support
-              const formattedQuestion = {
-                question: apiQuestion.question_text || apiQuestion.question || "سؤال غير متوفر",
-                answer: Array.isArray(apiQuestion.correct_answer) ? apiQuestion.correct_answer.join(', ') : (apiQuestion.correct_answer || apiQuestion.answer || "إجابة غير متوفرة"),
-                media_url: apiQuestion.question_media_url || null,
-                media_type: apiQuestion.type || null,
-                media_mime: apiQuestion.media_mime || null,
-                type: apiQuestion.question_type || apiQuestion.type || 'text',
-                options: [
-                apiQuestion.option_a,
-                apiQuestion.option_b, 
-                apiQuestion.option_c,
-                apiQuestion.option_d
-              ].filter(option => option && option.trim() !== '')
-              };
-              
-              console.log('Raw API Question from API:', apiQuestion);
-              console.log('Question Data from API:', formattedQuestion);
-              console.log('Question Type:', formattedQuestion.type);
-              console.log('Question Options:', formattedQuestion.options);
-              setQuestionData(formattedQuestion);
-              
-              // Save to localStorage for future use
-              const gameQuestionData = {
-                categoryId: parseInt(categoryId),
-                points: parseInt(value),
-                question: apiQuestion,
-                timestamp: new Date().toISOString()
-              };
-              localStorage.setItem("currentQuestion", JSON.stringify(gameQuestionData));
-              
-            } else {
-              setQuestionData(null);
-            }
-          } catch (error) {
-            setQuestionData(null);
-          }
-        }
-        
-        // Set current team based on turn
+        // تحميل بيانات اللعبة بدون تغيير اللاعب في الناف بار
         const completeData = localStorage.getItem("completeGameData");
         if (completeData) {
           const data = JSON.parse(completeData);
@@ -203,12 +214,27 @@ function TheGame() {
             const turn = data.gameInfo.currentTurn;
             const team1 = data.gameInfo.team1Name || "الفريق الأول";
             const team2 = data.gameInfo.team2Name || "الفريق الثاني";
+            // تحديد الفريق الحالي محلياً فقط (بدون تغيير الناف بار)
             setCurrentTeam(turn === 1 ? team1 : team2);
+            setCurrentTurn(turn);
+            console.log(`TheGame: تم تحميل بيانات اللعبة - الدور الحالي: ${turn === 1 ? team1 : team2} (${turn})`);
           }
         }
         
+        // إرسال حالة أن اللاعب دخل على سؤال ولم يجب بعد (بدون تغيير الناف بار)
+        const playerStatusEvent = new CustomEvent('playerStatusChanged', {
+          detail: { 
+            status: 'viewing_question', // يشاهد السؤال
+            currentTurn: currentTurn,
+            hasAnswered: false,
+            keepCurrentPlayer: true // عدم تغيير اللاعب في الناف بار
+          }
+        });
+        window.dispatchEvent(playerStatusEvent);
+        
       } catch (error) {
-        setQuestionData(null);
+        console.error('Error loading game data:', error);
+        setLoading(false);
       } finally {
         setLoading(false);
       }
@@ -216,6 +242,79 @@ function TheGame() {
 
     loadGameData();
   }, [categoryId, value]);
+
+  // فحص إذا كانت هناك حفرة مفعلة عند تحميل الصفحة
+  useEffect(() => {
+    const checkForActiveHole = () => {
+      const completeData = localStorage.getItem("completeGameData");
+      if (completeData) {
+        const data = JSON.parse(completeData);
+        if (data.gameInfo && data.gameInfo.holeActivated) {
+          console.log('TheGame: وجدت حفرة مفعلة - تطبيق فوري!');
+          
+          setHoleActivated(true);
+          setHoleTeam(data.gameInfo.holeTeam || "الفريق الأول");
+          setHoleSide(data.gameInfo.currentTeamUsingHole || "left");
+          
+          // تطبيق تأثير الحفرة فوراً
+          applyHoleEffect();
+          
+          console.log(`TheGame: تم تطبيق الحفرة فوراً لـ ${data.gameInfo.holeTeam}`);
+        }
+      }
+    };
+    
+    checkForActiveHole();
+  }, [categoryId, value]); // يتفعل عند دخول أي سؤال
+
+  // استماع لحدث تفعيل الحفرة من GameBoard
+  useEffect(() => {
+    const handleHoleActivation = (event) => {
+      const { side, activated, immediate } = event.detail;
+      console.log('TheGame: تم استقبال حدث تفعيل الحفرة:', event.detail);
+      
+      if (activated) {
+        setHoleActivated(true);
+        setHoleSide(side);
+        
+        // تحديد اسم الفريق
+        const teamName = side === "left" ? team1Name : team2Name;
+        setHoleTeam(teamName);
+        
+        if (immediate) {
+          // تطبيق فوري عند التفعيل
+          applyHoleEffect();
+          console.log(`TheGame: تم تطبيق الحفرة فوراً لـ ${teamName}`);
+        }
+      }
+    };
+
+    window.addEventListener("holeActivated", handleHoleActivation);
+
+    return () => {
+      window.removeEventListener("holeActivated", handleHoleActivation);
+    };
+  }, [team1Name, team2Name]);
+
+  // دالة تطبيق تأثير الحفرة
+  const applyHoleEffect = () => {
+    const basePoints = parseInt(value) || 0;
+    const holePoints = basePoints * 2; // مضاعفة النقاط
+    
+    console.log(`TheGame: تطبيق تأثير الحفرة - النقاط الأساسية: ${basePoints}, نقاط الحفرة: ${holePoints}`);
+    
+    // حفظ النقاط المضاعفة في localStorage لاستخدامها عند الإجابة
+    const completeData = localStorage.getItem("completeGameData");
+    if (completeData) {
+      const data = JSON.parse(completeData);
+      if (data.gameInfo) {
+        data.gameInfo.holePoints = holePoints;
+        data.gameInfo.holeApplied = true;
+        localStorage.setItem("completeGameData", JSON.stringify(data));
+        console.log(`✅ تم حفظ نقاط الحفرة: ${basePoints} → ${holePoints}`);
+      }
+    }
+  };
 
   const handleShowAnswer = () => {
     setShowAnswer(true);
@@ -244,7 +343,7 @@ function TheGame() {
       setTeam2Score(newScore);
     }
     
-    // Save updated scores to localStorage
+    // Save updated scores to localStorage and switch turn
     const completeGameData = localStorage.getItem("completeGameData");
     if (completeGameData) {
       const gameData = JSON.parse(completeGameData);
@@ -253,14 +352,19 @@ function TheGame() {
       } else {
         gameData.gameInfo.team2Score = newScore;
       }
-      gameData.gameInfo.currentTurn = currentTurn === 1 ? 2 : 1;
+      // تبديل الدور للفريق الآخر
+      const newTurn = currentTurn === 1 ? 2 : 1;
+      gameData.gameInfo.currentTurn = newTurn;
       // حفظ التقدم مع الاحتفاظ بالأسئلة المستخدمة
       gameData.timestamp = new Date().toISOString();
       localStorage.setItem("completeGameData", JSON.stringify(gameData));
+      
+      // إرسال حدث تحديث للـ navbar
+      const turnChangeEvent = new CustomEvent('turnChanged', {
+        detail: { currentTurn: newTurn }
+      });
+      window.dispatchEvent(turnChangeEvent);
     }
-    
-    // Switch turn
-    setCurrentTurn(currentTurn === 1 ? 2 : 1);
     
     // Navigate back to GameBoard immediately
     navigate("/GameBoard");
@@ -268,20 +372,138 @@ function TheGame() {
 
   // Handle team answer (correct answer)
   const handleTeamAnswer = (teamNumber) => {
-    const points = parseInt(value);
+    const basePoints = parseInt(value);
+    
+    // فحص إذا كانت هناك نقاط مضاعفة من الحفرة
+    const completeData = localStorage.getItem("completeGameData");
+    let holePoints = basePoints;
+    let isHoleApplied = false;
+    
+    if (completeData) {
+      const data = JSON.parse(completeData);
+      if (data.gameInfo && data.gameInfo.holeApplied && data.gameInfo.holePoints) {
+        holePoints = data.gameInfo.holePoints;
+        isHoleApplied = true;
+        console.log(`TheGame: تطبيق نقاط الحفرة المضاعفة: ${holePoints}`);
+      }
+    }
+    
+    const totalPoints = isHoleApplied ? holePoints : basePoints;
     let newTeam1Score = team1Score;
     let newTeam2Score = team2Score;
     
     if (teamNumber === 1) {
-      newTeam1Score = team1Score + points;
+      newTeam1Score = team1Score + totalPoints;
       setTeam1Score(newTeam1Score);
+      // إذا كانت الحفرة مفعلة، اطرح نقاط السؤال من الخصم
+      if (isHoleApplied) {
+        const oldTeam2Score = team2Score;
+        newTeam2Score = team2Score - basePoints; // السماح بالسالب
+        setTeam2Score(newTeam2Score);
+        console.log(`الحفرة: الفريق الثاني خسر ${basePoints} نقطة (${oldTeam2Score} → ${newTeam2Score})`);
+      }
     } else {
-      newTeam2Score = team2Score + points;
+      newTeam2Score = team2Score + totalPoints;
       setTeam2Score(newTeam2Score);
+      // إذا كانت الحفرة مفعلة، اطرح نقاط السؤال من الخصم
+      if (isHoleApplied) {
+        const oldTeam1Score = team1Score;
+        newTeam1Score = team1Score - basePoints; // السماح بالسالب
+        setTeam1Score(newTeam1Score);
+        console.log(`الحفرة: الفريق الأول خسر ${basePoints} نقطة (${oldTeam1Score} → ${newTeam1Score})`);
+      }
     }
     
-    // Save to localStorage
-    saveScoresToLocalStorage(newTeam1Score, newTeam2Score);
+    // إذا كانت الحفرة مطبقة، أظهر رسالة نجاح وأزل الحفرة
+    if (isHoleApplied) {
+      const teamName = teamNumber === 1 ? team1Name : team2Name;
+      const opponentName = teamNumber === 1 ? team2Name : team1Name;
+      console.log(`✨ تم تطبيق الحفرة بنجاح! ✨`);
+      console.log(`🏆 ${teamName} حصل على: ${totalPoints} نقطة (مضاعفة!)`);
+      console.log(`🕳️ ${opponentName} خسر: ${basePoints} نقطة بسبب الحفرة`);
+      console.log(`📊 النتيجة الجديدة: ${team1Name}: ${newTeam1Score}, ${team2Name}: ${newTeam2Score}`);
+      
+      // إزالة حالة الحفرة بعد الاستخدام
+      setHoleActivated(false);
+      
+      // مسح بيانات الحفرة من localStorage
+      const completeData = localStorage.getItem("completeGameData");
+      if (completeData) {
+        const data = JSON.parse(completeData);
+        if (data.gameInfo) {
+          data.gameInfo.holeActivated = false;
+          data.gameInfo.holeApplied = false;
+          data.gameInfo.holePoints = 0;
+          localStorage.setItem("completeGameData", JSON.stringify(data));
+          console.log('TheGame: تم مسح بيانات الحفرة بعد الاستخدام');
+        }
+      }
+    }
+    
+    // تأكيد أن السؤال تمت الإجابة عليه (العلامة موضوعة مسبقاً في GameBoard)
+    setQuestionAnswered(true);
+    
+    // إرسال حالة أن اللاعب أجاب على السؤال
+    const playerStatusEvent = new CustomEvent('playerStatusChanged', {
+      detail: { 
+        status: 'answered_question', // أجاب على السؤال
+        currentTurn: currentTurn,
+        hasAnswered: true,
+        teamNumber: teamNumber,
+        points: totalPoints
+      }
+    });
+    window.dispatchEvent(playerStatusEvent);
+    
+    // إرسال تحديث النتائج فوراً للناف بار
+    const scoresUpdateEvent = new CustomEvent('scoresUpdated', {
+      detail: {
+        team1Score: newTeam1Score,
+        team2Score: newTeam2Score
+      }
+    });
+    window.dispatchEvent(scoresUpdateEvent);
+    console.log(`TheGame: تم إرسال تحديث النتائج فوراً - ${team1Name}: ${newTeam1Score}, ${team2Name}: ${newTeam2Score}`);
+    
+    // إرسال حدث اكتمال الإجابة لتقليب اللاعب
+    const answerCompletedEvent = new CustomEvent('answerCompleted', {
+      detail: {
+        teamNumber: teamNumber,
+        points: totalPoints
+      }
+    });
+    window.dispatchEvent(answerCompletedEvent);
+    console.log(`TheGame: تم إرسال حدث اكتمال الإجابة - سيتم تقليب اللاعب من ${currentTurn} إلى ${currentTurn === 1 ? 2 : 1}`);
+    
+    // Save to localStorage and switch turn
+    const completeGameData = localStorage.getItem("completeGameData");
+    if (completeGameData) {
+      const gameData = JSON.parse(completeGameData);
+      gameData.gameInfo.team1Score = newTeam1Score;
+      gameData.gameInfo.team2Score = newTeam2Score;
+      // تبديل الدور للفريق الآخر
+      const newTurn = currentTurn === 1 ? 2 : 1;
+      gameData.gameInfo.currentTurn = newTurn;
+      
+      // إزالة حالة الحفرة بعد الاستخدام
+      if (holeActive) {
+        // إزالة حالة الحفرة من localStorage
+        const urlParams = new URLSearchParams(window.location.search);
+        const side = urlParams.get('side') || 'left';
+        if (gameData.gameInfo.currentTeamUsingHole === side) {
+          gameData.gameInfo.currentTeamUsingHole = null;
+        }
+      }
+      
+      gameData.timestamp = new Date().toISOString();
+      localStorage.setItem("completeGameData", JSON.stringify(gameData));
+      
+      // إرسال حدث تحديث للـ navbar
+      const turnChangeEvent = new CustomEvent('turnChanged', {
+        detail: { currentTurn: newTurn }
+      });
+      window.dispatchEvent(turnChangeEvent);
+    }
     
     // Navigate back to GameBoard immediately
     navigate("/GameBoard");
@@ -289,18 +511,69 @@ function TheGame() {
 
   // Handle no answer
   const handleNoAnswer = () => {
-    // Save current turn to localStorage
+    console.log('handleNoAnswer: تم استدعاء دالة handleNoAnswer');
+    
+    // إذا كانت الحفرة مفعلة، لا يحدث شيء (حسب قواعد الحفرة)
+    if (holeActive) {
+      console.log('الحفرة مفعلة ولم يجاوب أحد - لا يحدث شيء');
+      // إزالة حالة الحفرة
+      setHoleActive(false);
+      setBonusPoints(0);
+    }
+    
+    // تأكيد أن السؤال تمت الإجابة عليه (العلامة موضوعة مسبقاً في GameBoard)
+    setQuestionAnswered(true);
+    
+    // إرسال حالة أن اللاعب لم يجب على السؤال
+    const playerStatusEvent = new CustomEvent('playerStatusChanged', {
+      detail: { 
+        status: 'no_answer', // لم يجب على السؤال
+        currentTurn: currentTurn,
+        hasAnswered: false
+      }
+    });
+    window.dispatchEvent(playerStatusEvent);
+    
+    // لا حاجة لإرسال تحديث النتائج هنا لأن النتائج لم تتغير
+    
+    // إرسال حدث اكتمال الإجابة (عدم إجابة) لتقليب اللاعب
+    console.log('DEBUG: currentTurn =', currentTurn);
+    const answerCompletedEvent = new CustomEvent('answerCompleted', {
+      detail: {
+        teamNumber: currentTurn, // تم إصلاح المتغير - استخدام currentTurn
+        points: 0 // عدم إجابة
+      }
+    });
+    window.dispatchEvent(answerCompletedEvent);
+    console.log(`TheGame: تم إرسال حدث عدم الإجابة - سيتم تقليب اللاعب من ${currentTurn} إلى ${currentTurn === 1 ? 2 : 1}`);
+    
+    // Save current turn to localStorage and switch turn
     const completeGameData = localStorage.getItem("completeGameData");
     if (completeGameData) {
       const gameData = JSON.parse(completeGameData);
-      gameData.gameInfo.currentTurn = currentTurn === 1 ? 2 : 1;
+      // تبديل الدور للفريق الآخر
+      const newTurn = currentTurn === 1 ? 2 : 1;
+      gameData.gameInfo.currentTurn = newTurn;
+      
+      // إزالة حالة الحفرة بعد الاستخدام (حتى لو لم يجاوب)
+      if (holeActive) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const side = urlParams.get('side') || 'left';
+        if (gameData.gameInfo.currentTeamUsingHole === side) {
+          gameData.gameInfo.currentTeamUsingHole = null;
+        }
+      }
+      
       // حفظ التقدم مع الاحتفاظ بالأسئلة المستخدمة
       gameData.timestamp = new Date().toISOString();
       localStorage.setItem("completeGameData", JSON.stringify(gameData));
+      
+      // إرسال حدث تحديث للـ navbar
+      const turnChangeEvent = new CustomEvent('turnChanged', {
+        detail: { currentTurn: newTurn }
+      });
+      window.dispatchEvent(turnChangeEvent);
     }
-    
-    // Switch turn
-    setCurrentTurn(currentTurn === 1 ? 2 : 1);
     
     // Navigate back to GameBoard immediately
     navigate("/GameBoard");
@@ -401,12 +674,18 @@ function TheGame() {
 
   return (
     <div className="main-wrapper">
+      
       <div className="right-sidebar">
-        <button className="big-button">
+        {/* <button 
+          className="big-button"
+          onClick={() => {
+            // لا يفعل شيء - المستخدم لا يستطيع تغيير الدور
+          }}
+        >
           دور فريق
           <br />
           <span className="team-name">{currentTeam}</span>
-        </button>
+        </button> */}
         <button className="big-button" onClick={toggleHelp}>
           مساعدة
         </button>
@@ -444,17 +723,50 @@ function TheGame() {
         )}
       </div>
 
-      <div className="containerg">
+      <div className="containerg">        
         <button
           className="corner-label corner-top-left"
-          onClick={() => navigate("/GameBoard")}
+          onClick={() => {
+            // إذا لم يتم الإجابة على السؤال، قم بإزالة علامة الاستخدام
+            if (!questionAnswered) {
+              // الحصول على الجانب من URL
+              const urlParams = new URLSearchParams(window.location.search);
+              const side = urlParams.get('side') || 'left';
+              unmarkQuestionAsUsed(categoryId, value, side);
+              
+              // إرسال حالة أن اللاعب رجع بدون إجابة
+              const playerStatusEvent = new CustomEvent('playerStatusChanged', {
+                detail: { 
+                  status: 'returned_without_answer', // رجع بدون إجابة
+                  currentTurn: currentTurn,
+                  hasAnswered: false
+                }
+              });
+              window.dispatchEvent(playerStatusEvent);
+            }
+            navigate("/GameBoard");
+          }}
           aria-label="الخروج للوحة الألعاب"
         >
           الذهاب الى لوحة الألعاب
         </button>
 
         <div className="corner-label corner-top-right" aria-label="النقاط">
-          {value || 0} نقطة
+          {holeActive ? (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#fff' }}>
+                {parseInt(value) * 2} نقطة
+              </div>
+              <div style={{ fontSize: '12px', color: '#fff' }}>
+                ({value} × 2 = {parseInt(value) * 2})
+              </div>
+              <div style={{ fontSize: '10px', color: '#ffeb3b', marginTop: '2px' }}>
+                الخصم يخسر {value}
+              </div>
+            </div>
+          ) : (
+            <>{value || 0} نقطة</>
+          )}
         </div>
 
         <div className="top-center-timer" aria-label="عداد الوقت">

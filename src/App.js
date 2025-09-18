@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar/Navbar.jsx";
+import GameNavbar from "./components/gameNavbar/gameNavbar.jsx";
 import Login from "./services/Login/Login.jsx";
 import Register from "./services/Register/Register.jsx";
 import Contact from "./services/Contact/Contact.jsx";
@@ -79,7 +80,7 @@ function AppContent() {
           path="/TheGame/:categoryId/:value"
           element={
             <>
-              <Navbar />
+              <GameNavbar />
               <TheGame />
             </>
           }
@@ -87,7 +88,7 @@ function AppContent() {
         
         <Route path="/GameBoard" element={
           <>
-            <Navbar />
+            <GameNavbar />
             <GameBoard />
           </>
         } />
