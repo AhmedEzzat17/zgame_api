@@ -42,13 +42,51 @@ apiClient.interceptors.response.use(
   (error) => {
     // معالجة خطأ 401 (unauthorized)
     if (error.response?.status === 401) {
-      localStorage.removeItem("user");
-      window.location.href = "/login";
+      try {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          // إذا كان المستخدم أدمن، لا نقوم بإعادة التوجيه التلقائي
+          const isAdminUser = user.user && user.user.isAdmin && user.user.email === 'admin@gmail.com';
+          const hasToken = user.token && user.token.length > 0;
+          
+          if (isAdminUser && hasToken) {
+            // console.log("ApiFunctions: الأدمن - لا إعادة توجيه تلقائي");
+            return Promise.reject(error);
+          }
+        }
+        // للمستخدمين العاديين فقط
+        // console.log("ApiFunctions: إعادة توجيه للمستخدم العادي");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+      } catch (e) {
+        // fallback behavior
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+      }
     }
     
     return Promise.reject(error);
   }
 );
+
+// دالة للتحقق من الأدمن
+const isAdmin = () => {
+  try {
+    const userData = localStorage.getItem("user");
+    if (!userData) return false;
+    const user = JSON.parse(userData);
+    
+    // التحقق من الأدمن: يجب أن يكون isAdmin: true و email صحيح و token موجود
+    const isAdminUser = user.user?.isAdmin === true && user.user?.email === "admin@gmail.com";
+    const hasToken = user.token && user.token.length > 0;
+    
+    return isAdminUser && hasToken;
+  } catch (e) {
+    return false;
+  }
+};
+
 
 export default class ApiFunctions {
   constructor(endpoint) {

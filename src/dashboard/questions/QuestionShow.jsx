@@ -45,10 +45,19 @@ const QuestionShow = () => {
         currentPage,
         searchTerm
       );
-      setQuestions(res.data.data.data);
-      setLastPage(res.data.data.last_page);
+      
+      
+      // التأكد من وجود البيانات وتعيين قيم افتراضية
+      const responseData = res.data?.data || res.data || {};
+      const questionsData = responseData.data || [];
+      const lastPageData = responseData.last_page || 1;
+      
+      setQuestions(Array.isArray(questionsData) ? questionsData : []);
+      setLastPage(lastPageData);
+      
     } catch (err) {
       setMessage("حدث خطأ أثناء جلب البيانات");
+      setQuestions([]); // تعيين مصفوفة فارغة عند الخطأ
     } finally {
       setLoading(false);
     }
@@ -289,7 +298,7 @@ const QuestionShow = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {questions.length > 0 ? (
+                      {questions && Array.isArray(questions) && questions.length > 0 ? (
                         questions.map((question, index) => (
                           <tr key={question.id}>
                             <td>{(page - 1) * 10 + index + 1}</td>

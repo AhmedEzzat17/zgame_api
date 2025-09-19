@@ -20,6 +20,7 @@ import TheGame from "./pages/TheGame/TheGame.jsx";
 import Dashboard from "./dashboard/dashboard.jsx"; // تعديل الاسم بحرف كبير
 import Profile from "./components/profile/profile.jsx";
 import MyGames from "./components/myGames/myGames.jsx";
+import ProtectedRoute from "./router/ProtectedRoute.jsx";
 
 function AppContent() {
   return (
@@ -128,8 +129,10 @@ function AppContent() {
           </>
         } />
 
-        {/* تعديل هنا */}
-        <Route path="/dashboard/*" element={<Dashboard />} />
+        {/* حماية الداشبورد - يتطلب تسجيل دخول الأدمن */}
+        <Route path="/dashboard/*" element={<ProtectedRoute />}>
+          <Route path="*" element={<Dashboard />} />
+        </Route>
 
       </Routes>
     </>

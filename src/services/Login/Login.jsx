@@ -30,65 +30,71 @@ const Login = () => {
     setErrors({});
     setMessage("");
 
-    // التحقق من بيانات الأدمن
-    if (formData.email === "admin@gmail.com" && formData.password === "123456789") {
-      localStorage.setItem("user", JSON.stringify({
-        token: "admin_token",
-        user: {
-          name: "Admin",
-          email: "admin@gmail.com",
-          isAdmin: true
-        }
-      }));
-      
-      // إرسال حدث للنافذة لتحديث الـ Navbar
-      window.dispatchEvent(new Event('storage'));
-      
-      setMessage("تم تسجيل الدخول بنجاح! جاري التحويل...");
-      
-      setTimeout(() => {
-        navigate("/Dashboard");
-      }, 1500);
-      
-      setIsLoading(false);
-      return;
-    }
-  
+    // محاولة تسجيل الدخول عبر السيرفر (للأدمن والمستخدمين العاديين)
     try {
+      // console.log("Login: إرسال بيانات تسجيل الدخول للسيرفر");
       const response = await LoginService.login(formData);
       
       if (response.data.token) {
+        // console.log("Login: تم استلام التوكن من السيرفر بنجاح");
+        
+        // تحديد إذا كان المستخدم أدمن أم لا
+        const isAdminUser = formData.email === "admin@gmail.com" || response.data.user?.role === "admin";
+        
         localStorage.setItem("user", JSON.stringify({
-          token: response.data.token,
+          token: response.data.token, // التوكن الحقيقي من السيرفر
           user: {
             ...response.data.user,
-            isAdmin: response.data.user?.email === "admin@gmail.com" // أو حسب الباك إند
+            isAdmin: isAdminUser // تحديد صلاحيات الأدمن
           }
         }));
         
         // إرسال حدث للنافذة لتحديث الـ Navbar
         window.dispatchEvent(new Event('storage'));
         
-        setMessage("تم تسجيل الدخول بنجاح! جاري التحويل...");
+        if (isAdminUser) {
+          setMessage("تم تسجيل الدخول كأدمن بنجاح! جاري التحويل...");
+          setTimeout(() => {
+            navigate("/dashboard");
+          }, 1500);
+        } else {
+          setMessage("تم تسجيل الدخول بنجاح! جاري التحويل...");
+          setTimeout(() => {
+            navigate("/");
+          }, 1500);
+        }
+      }
+    } catch (error) {
+      // console.log("Login: خطأ في تسجيل الدخول", error);
+      
+      // إذا كان الأدمن وفشل السيرفر، استخدم fallback
+      if (formData.email === "admin@gmail.com" && formData.password === "123456789") {
+        // console.log("Login: استخدام fallback للأدمن");
+        
+        localStorage.setItem("user", JSON.stringify({
+          token: "admin_token", // توكن محلي كـ fallback
+          user: {
+            name: "Admin",
+            email: "admin@gmail.com",
+            isAdmin: true
+          }
+        }));
+        
+        // إرسال حدث للنافذة لتحديث الـ Navbar
+        window.dispatchEvent(new Event('storage'));
+        
+        setMessage("تم تسجيل الدخول كأدمن بنجاح! (وضع محلي) جاري التحويل...");
         
         setTimeout(() => {
-          const user = JSON.parse(localStorage.getItem("user"));
-          if (user?.user?.isAdmin) {
-            navigate("/Dashboard");
-          } else {
-            navigate("/");
-          }
+          navigate("/dashboard");
         }, 1500);
-      }
-      
-  
-    } 
-    catch (error) {
-  
-      if (error.response?.data?.errors) {
-        setErrors(error.response.data.errors);
       } else {
-        setMessage(error.response?.data?.message || "خطأ في البريد الإلكتروني أو كلمة المرور");
+        // للمستخدمين العاديين - عرض رسالة الخطأ
+        if (error.response?.data?.errors) {
+          setErrors(error.response.data.errors);
+        } else {
+          setMessage(error.response?.data?.message || "خطأ في البريد الإلكتروني أو كلمة المرور");
+        }
       }
     } finally {
       setIsLoading(false);

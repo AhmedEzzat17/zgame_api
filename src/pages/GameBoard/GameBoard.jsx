@@ -54,7 +54,7 @@ export default function GameBoard() {
   // دالة بسيطة لتحديد الحفرة النشطة حسب الدور (بدون تأثير على أي شيء آخر)
   const getActiveHole = () => {
     const activeHole = currentTurn === 1 ? "left" : "right";
-    console.log(`الدور الحالي: ${currentTurn}, الحفرة النشطة: ${activeHole}`);
+    // console.log(`الدور الحالي: ${currentTurn}, الحفرة النشطة: ${activeHole}`);
     return activeHole;
   };
 
@@ -68,9 +68,9 @@ export default function GameBoard() {
     const isCurrentTurn = getActiveHole() === side;
     const notUsed = !holeUsed[side];
     const canActivate = isCurrentTurn && notUsed;
-    console.log(
-      `الحفرة ${side}: قابلة للتفعيل = ${canActivate}, الدور = ${currentTurn}, مستخدمة = ${holeUsed[side]}`
-    );
+    // console.log(
+    //   `الحفرة ${side}: قابلة للتفعيل = ${canActivate}, الدور = ${currentTurn}, مستخدمة = ${holeUsed[side]}`
+    // );
     return canActivate;
   };
 
@@ -83,7 +83,7 @@ export default function GameBoard() {
         if (gameData.gameInfo && gameData.gameInfo.currentTurn) {
           const savedTurn = gameData.gameInfo.currentTurn;
           setCurrentTurn(savedTurn);
-          console.log(`GameBoard: تم تحميل الدور من localStorage: ${savedTurn}`);
+          // console.log(`GameBoard: تم تحميل الدور من localStorage: ${savedTurn}`);
         }
       }
     };
@@ -95,7 +95,7 @@ export default function GameBoard() {
   useEffect(() => {
     const handleTurnChange = (event) => {
       const newTurn = event.detail.currentTurn;
-      console.log(`GameBoard: تم استقبال حدث تغيير الدور إلى: ${newTurn}`);
+      // console.log(`GameBoard: تم استقبال حدث تغيير الدور إلى: ${newTurn}`);
       setCurrentTurn(newTurn);
     };
 
@@ -108,11 +108,11 @@ export default function GameBoard() {
 
   // إعادة رسم الواجهة عند تغيير الدور لتحديث حالة الحفرة
   useEffect(() => {
-    console.log(
-      `تم تحديث الدور في GameBoard: ${currentTurn} - الحفرة النشطة: ${
-        currentTurn === 1 ? "اليسرى" : "اليمنى"
-      }`
-    );
+    // console.log(
+    //   `تم تحديث الدور في GameBoard: ${currentTurn} - الحفرة النشطة: ${
+    //     currentTurn === 1 ? "اليسرى" : "اليمنى"
+    //   }`
+    // );
   }, [currentTurn]);
 
   // Function to save game state to localStorage
@@ -365,9 +365,9 @@ export default function GameBoard() {
           JSON.stringify(gameQuestionData)
         );
 
-        console.log(
-          `تم وضع علامة على السؤال ${categoryId}-${points}-${side} كمستخدم`
-        );
+        // console.log(
+        //   `تم وضع علامة على السؤال ${categoryId}-${points}-${side} كمستخدم`
+        // );
 
         // الانتقال لصفحة السؤال
         navigate(`/TheGame/${categoryId}/${points}?side=${side}`);
@@ -401,14 +401,14 @@ export default function GameBoard() {
           JSON.stringify(gameQuestionData)
         );
 
-        console.log(
-          `تم وضع علامة على السؤال التجريبي ${categoryId}-${points}-${side} كمستخدم`
-        );
+        // console.log(
+        //   `تم وضع علامة على السؤال التجريبي ${categoryId}-${points}-${side} كمستخدم`
+        // );
 
         navigate(`/TheGame/${categoryId}/${points}?side=${side}`);
       }
     } catch (error) {
-      console.error("خطأ في جلب السؤال:", error);
+      // console.error("خطأ في جلب السؤال:", error);
 
       // في حالة فشل الـ API، استخدم سؤال تجريبي
       const mockQuestion = {
@@ -436,9 +436,9 @@ export default function GameBoard() {
 
       localStorage.setItem("currentQuestion", JSON.stringify(gameQuestionData));
 
-      console.log(
-        `تم وضع علامة على السؤال التجريبي (خطأ) ${categoryId}-${points}-${side} كمستخدم`
-      );
+      // console.log(
+      //   `تم وضع علامة على السؤال التجريبي (خطأ) ${categoryId}-${points}-${side} كمستخدم`
+      // );
 
       navigate(`/TheGame/${categoryId}/${points}?side=${side}`);
     } finally {
@@ -499,11 +499,11 @@ export default function GameBoard() {
         }
       }
 
-      console.log(
-        `GameBoard: تم تحديث الدور إلى ${
-          newTurn === 1 ? "الأول" : "الثاني"
-        } - الحفرة النشطة: ${newTurn === 1 ? "اليسرى" : "اليمنى"}`
-      );
+      // console.log(
+      //   `GameBoard: تم تحديث الدور إلى ${
+      //     newTurn === 1 ? "الأول" : "الثاني"
+      //   } - الحفرة النشطة: ${newTurn === 1 ? "اليسرى" : "اليمنى"}`
+      // );
     };
 
     window.addEventListener("turnChanged", handleTurnChange);
@@ -524,11 +524,11 @@ export default function GameBoard() {
           const newTurn = gameData.gameInfo.currentTurn;
           if (newTurn !== currentTurn) {
             setCurrentTurn(newTurn);
-            console.log(
-              `GameBoard: تم تحديث الدور عند العودة إلى ${
-                newTurn === 1 ? "الأول" : "الثاني"
-              } - الحفرة النشطة: ${newTurn === 1 ? "اليسرى" : "اليمنى"}`
-            );
+            // console.log(
+            //   `GameBoard: تم تحديث الدور عند العودة إلى ${
+            //     newTurn === 1 ? "الأول" : "الثاني"
+            //   } - الحفرة النشطة: ${newTurn === 1 ? "اليسرى" : "اليمنى"}`
+            // );
           }
         }
       }
@@ -800,7 +800,7 @@ export default function GameBoard() {
                   if (canActivateHole("left")) {
                     setShowHoleModal("left");
                   } else if (isHoleVisible("left")) {
-                    console.log('ليس دورك - لا يمكن تفعيل الحفرة اليسرى');
+                    // console.log('ليس دورك - لا يمكن تفعيل الحفرة اليسرى');
                   }
                 }}
                 title={
@@ -885,7 +885,7 @@ export default function GameBoard() {
                   if (canActivateHole("right")) {
                     setShowHoleModal("right");
                   } else if (isHoleVisible("right")) {
-                    console.log('ليس دورك - لا يمكن تفعيل الحفرة اليمنى');
+                    // console.log('ليس دورك - لا يمكن تفعيل الحفرة اليمنى');
                   }
                 }}
                 title={
@@ -976,7 +976,7 @@ export default function GameBoard() {
               <button
                 className="activate-btn"
                 onClick={() => {
-                  console.log(`GameBoard: بدء تفعيل الحفرة ${showHoleModal}`);
+                  // console.log(`GameBoard: بدء تفعيل الحفرة ${showHoleModal}`);
                   
                   // تحديث localStorage أولاً لضمان التفعيل الفوري
                   const updatedHoleUsed = {
@@ -993,7 +993,7 @@ export default function GameBoard() {
                       gameData.gameInfo.holeActivated = true; // علامة على أن الحفرة مفعلة
                       gameData.gameInfo.holeTeam = showHoleModal === "left" ? gameData.gameInfo.team1Name : gameData.gameInfo.team2Name;
                       localStorage.setItem("completeGameData", JSON.stringify(gameData));
-                      console.log('GameBoard: تم حفظ بيانات الحفرة في localStorage');
+                      // console.log('GameBoard: تم حفظ بيانات الحفرة في localStorage');
                     }
                   }
 
@@ -1011,7 +1011,7 @@ export default function GameBoard() {
                   });
                   window.dispatchEvent(holeActivatedEvent);
                   
-                  console.log(`GameBoard: تم إرسال حدث تفعيل الحفرة فوراً - ${showHoleModal}`);
+                  // console.log(`GameBoard: تم إرسال حدث تفعيل الحفرة فوراً - ${showHoleModal}`);
                   
                   setShowHoleModal(false);
                 }}

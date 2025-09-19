@@ -41,13 +41,19 @@ const UserShow = () => {
   const fetchUsers = async (currentPage = 1, searchTerm = "") => {
     try {
       const res = await UserService.getWithPagination(currentPage, searchTerm);
-
-      // البيانات موجودة في res.data.data.data
-      setUsers(res.data.data.data);
-
-      // والـ last_page موجودة في res.data.data.last_page
-      setLastPage(res.data.data.last_page);
+      
+      
+      // التأكد من وجود البيانات وتعيين قيم افتراضية
+      const responseData = res.data?.data || res.data || {};
+      const usersData = responseData.data || [];
+      const lastPageData = responseData.last_page || 1;
+      
+      setUsers(Array.isArray(usersData) ? usersData : []);
+      setLastPage(lastPageData);
+      
     } catch (err) {
+      setMessage("حدث خطأ أثناء جلب البيانات");
+      setUsers([]); // تعيين مصفوفة فارغة عند الخطأ
     }
   };
 
@@ -155,7 +161,7 @@ const UserShow = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.length > 0 ? (
+                    {users && Array.isArray(users) && users.length > 0 ? (
                       users.map((user, index) => (
                         <tr key={user.id}>
                           <td>{(page - 1) * 10 + index + 1}</td>
