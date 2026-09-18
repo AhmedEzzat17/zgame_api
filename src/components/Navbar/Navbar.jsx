@@ -21,6 +21,25 @@ const Navbar = () => {
     // تنظيف بيانات البطولة عند الضغط على "العب"
     localStorage.removeItem("currentTournamentMatch");
     localStorage.removeItem("tournamentData");
+    
+    // تنظيف معرف اللعبة السابقة لضمان إنشاء لعبة جديدة
+    const completeGameData = localStorage.getItem("completeGameData");
+    if (completeGameData) {
+      try {
+        const gameData = JSON.parse(completeGameData);
+        if (gameData.gameInfo) {
+          delete gameData.gameInfo.currentGameId; // إزالة معرف اللعبة السابقة
+          localStorage.setItem("completeGameData", JSON.stringify(gameData));
+        }
+      } catch (error) {
+        console.error('خطأ في تنظيف معرف اللعبة:', error);
+      }
+    }
+    
+    // تنظيف علامة إنشاء اللعبة
+    window.gameCreationInProgress = false;
+    
+    console.log('تم تنظيف بيانات البطولة ومعرف اللعبة السابقة من Navbar');
     setIsOpen(false);
   };
 

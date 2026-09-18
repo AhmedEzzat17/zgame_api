@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import questionsService from "../../services/questionsservice";
+import gamesService from "../../services/gamesService";
 
 // Default fallback categories (will be replaced by localStorage data)
 const defaultCategories = [
@@ -50,6 +51,7 @@ export default function GameBoard() {
   const [currentTeamUsingHole, setCurrentTeamUsingHole] = useState(null);
   const [currentTurn, setCurrentTurn] = useState(1); // 1 for team1, 2 for team2
   const [currentQuestionPoints, setCurrentQuestionPoints] = useState(0); // نقاط السؤال الحالي
+  const [currentGameId, setCurrentGameId] = useState(null); // معرف اللعبة الحالية في API
 
   // دالة بسيطة لتحديد الحفرة النشطة حسب الدور (بدون تأثير على أي شيء آخر)
   const getActiveHole = () => {
@@ -75,28 +77,197 @@ export default function GameBoard() {
   };
 
   // تحميل الدور من localStorage عند بدء التطبيق
+  const loadCurrentTurn = () => {
+    const completeGameData = localStorage.getItem("completeGameData");
+    if (completeGameData) {
+      const gameData = JSON.parse(completeGameData);
+      if (gameData.gameInfo && gameData.gameInfo.currentTurn) {
+        const savedTurn = gameData.gameInfo.currentTurn;
+        setCurrentTurn(savedTurn);
+        // console.log(`GameBoard: تم تحميل الدور من localStorage: ${savedTurn}`);
+      }
+    }
+  };
+
+  // دالة تحميل بيانات اللعبة
+  const loadGameData = () => {
+    // أولاً: تحميل الأقسام المختارة من selectedItems
+    const selectedItems = localStorage.getItem("selectedItems");
+    if (selectedItems) {
+      try {
+        const selectedCategories = JSON.parse(selectedItems);
+        if (selectedCategories && selectedCategories.length === 6) {
+          const loadedCategories = selectedCategories.map((cat, index) => ({
+            id: index + 1,
+            title: cat.name || cat.title,
+            img:
+              cat.image ||
+              cat.img ||
+              "images/zGame_All_Pages-_3_-removebg-preview.png",
+          }));
+          setCategories(loadedCategories);
+        }
+      } catch (error) {}
+    }
+
+    // ثانياً: تحميل بيانات اللعبة من completeGameData
+    const completeGameData = localStorage.getItem("completeGameData");
+    if (completeGameData) {
+      const gameData = JSON.parse(completeGameData);
+
+      // تحميل الأقسام من completeGameData إذا لم توجد في selectedItems
+      if (
+        !selectedItems &&
+        gameData.categories &&
+        gameData.categories.length === 6
+      ) {
+        const loadedCategories = gameData.categories.map((cat, index) => ({
+          id: index + 1,
+          title: cat.title || cat.name,
+          img:
+            cat.img ||
+            cat.image ||
+            "images/zGame_All_Pages-_3_-removebg-preview.png",
+        }));
+        setCategories(loadedCategories);
+      }
+
+      // Load team names and scores from localStorage
+      if (gameData.gameInfo) {
+        const updates = {};
+
+        // فحص إذا كانت اللعبة في وضع البطولة
+        if (gameData.gameInfo.isTournamentMode) {
+          setIsTournamentMode(true);
+          setTournamentData(gameData.gameInfo.tournamentData);
+          updates.isTournamentMode = true;
+          updates.tournamentData = gameData.gameInfo.tournamentData;
+        }
+
+        if (gameData.gameInfo.team1Name) {
+          setTeam1Name(gameData.gameInfo.team1Name);
+          updates.team1Name = gameData.gameInfo.team1Name;
+        }
+        if (gameData.gameInfo.team2Name) {
+          setTeam2Name(gameData.gameInfo.team2Name);
+          updates.team2Name = gameData.gameInfo.team2Name;
+        }
+
+        // Load scores - always update to latest values
+        if (gameData.gameInfo.team1Score !== undefined) {
+          setScoreLeft(gameData.gameInfo.team1Score);
+          updates.team1Score = gameData.gameInfo.team1Score;
+        }
+        if (gameData.gameInfo.team2Score !== undefined) {
+          setScoreRight(gameData.gameInfo.team2Score);
+          updates.team2Score = gameData.gameInfo.team2Score;
+        }
+
+        // Load hole state
+        if (gameData.gameInfo.holeUsed) {
+          setHoleUsed(gameData.gameInfo.holeUsed);
+          updates.holeUsed = gameData.gameInfo.holeUsed;
+        }
+        if (gameData.gameInfo.currentTeamUsingHole) {
+          setCurrentTeamUsingHole(gameData.gameInfo.currentTeamUsingHole);
+          updates.currentTeamUsingHole =
+            gameData.gameInfo.currentTeamUsingHole;
+        }
+
+        // Load current turn
+        if (gameData.gameInfo.currentTurn) {
+          setCurrentTurn(gameData.gameInfo.currentTurn);
+          updates.currentTurn = gameData.gameInfo.currentTurn;
+        }
+
+        // Load current game ID
+        if (gameData.gameInfo.currentGameId) {
+          setCurrentGameId(gameData.gameInfo.currentGameId);
+          updates.currentGameId = gameData.gameInfo.currentGameId;
+        }
+        
+        // استعادة الأسئلة المستخدمة من البيانات المحفوظة
+        if (gameData.gameInfo.usedQuestions && Array.isArray(gameData.gameInfo.usedQuestions)) {
+          const savedUsedQuestions = new Set(gameData.gameInfo.usedQuestions);
+          setUsedQuestions(savedUsedQuestions);
+          console.log(`📝 تم استعادة ${savedUsedQuestions.size} سؤال مستخدم من البيانات المحفوظة`);
+          console.log('📝 قائمة الأسئلة المستعادة:', gameData.gameInfo.usedQuestions);
+          
+          // تحديث فوري متعدد لضمان ظهور الأسئلة
+          setTimeout(() => {
+            if (typeof forceQuestionsUpdate === 'function') {
+              forceQuestionsUpdate();
+            }
+          }, 10);
+          setTimeout(() => {
+            if (typeof forceQuestionsUpdate === 'function') {
+              forceQuestionsUpdate();
+            }
+          }, 100);
+          setTimeout(() => {
+            if (typeof forceQuestionsUpdate === 'function') {
+              forceQuestionsUpdate();
+            }
+          }, 300);
+        } else {
+          console.log('⚠️ لم توجد أسئلة في gameData.gameInfo.usedQuestions');
+          // محاولة تحديث الأسئلة
+          setTimeout(() => {
+            if (typeof forceQuestionsUpdate === 'function') {
+              forceQuestionsUpdate();
+            }
+          }, 50);
+        }
+        
+        // استعادة وسائل المساعدة المستخدمة
+        if (gameData.gameInfo.lifelinesUsed) {
+          console.log(`🎯 تم تحميل وسائل المساعدة المستخدمة:`, gameData.gameInfo.lifelinesUsed);
+        }
+      }
+    } else {
+      // لا نحتاج لإنشاء اللعبة هنا - سيتم إنشاؤها عند أول سؤال
+      console.log('لم توجد بيانات محفوظة - سيتم إنشاء اللعبة عند أول سؤال');
+    }
+
+    // عرض معرف اللعبة الحالي إن وجد
+    if (!isTournamentMode && currentGameId) {
+      console.log(`معرف اللعبة الحالي: ${currentGameId}`);
+    } else if (!isTournamentMode) {
+      console.log('لا يوجد معرف لعبة - سيتم إنشاء لعبة جديدة عند أول سؤال');
+    }
+  };
+
+  // Load game data on component mount
   useEffect(() => {
-    const loadCurrentTurn = () => {
+    loadGameData();
+    
+    // إنشاء معرف لعبة جديد إذا لم يكن موجود
+    if (!currentGameId) {
+      const newGameId = generateGameId();
+      setCurrentGameId(newGameId);
+      console.log(`🆕 تم إنشاء معرف لعبة جديد عند البدء: ${newGameId}`);
+      
+      // حفظ المعرف في localStorage
       const completeGameData = localStorage.getItem("completeGameData");
       if (completeGameData) {
         const gameData = JSON.parse(completeGameData);
-        if (gameData.gameInfo && gameData.gameInfo.currentTurn) {
-          const savedTurn = gameData.gameInfo.currentTurn;
-          setCurrentTurn(savedTurn);
-          // console.log(`GameBoard: تم تحميل الدور من localStorage: ${savedTurn}`);
+        if (gameData.gameInfo) {
+          gameData.gameInfo.currentGameId = newGameId;
+          localStorage.setItem("completeGameData", JSON.stringify(gameData));
         }
       }
-    };
-    
+    }
+  }, []);
+
+  // Load current turn from localStorage on component mount
+  useEffect(() => {
     loadCurrentTurn();
   }, []);
 
-  // استماع لتغييرات الدور من الناف بار
+  // Listen for turn changes from navbar
   useEffect(() => {
     const handleTurnChange = (event) => {
-      const newTurn = event.detail.currentTurn;
-      // console.log(`GameBoard: تم استقبال حدث تغيير الدور إلى: ${newTurn}`);
-      setCurrentTurn(newTurn);
+      setCurrentTurn(event.detail.currentTurn);
     };
 
     window.addEventListener("turnChanged", handleTurnChange);
@@ -104,7 +275,7 @@ export default function GameBoard() {
     return () => {
       window.removeEventListener("turnChanged", handleTurnChange);
     };
-  }, []);
+  }, [currentTurn]);
 
   // إعادة رسم الواجهة عند تغيير الدور لتحديث حالة الحفرة
   useEffect(() => {
@@ -114,6 +285,62 @@ export default function GameBoard() {
     //   }`
     // );
   }, [currentTurn]);
+
+  // دالة لإنشاء معرف فريد للعبة
+  const generateGameId = () => {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substr(2, 9);
+    return `game_${timestamp}_${random}`;
+  };
+
+  // دالة لحفظ نتيجة لعبة منفصلة
+  const saveIndividualGameScore = (gameId, team1Score, team2Score, isCompleted = false) => {
+    try {
+      // جلب جميع نتائج الألعاب المحفوظة
+      const allGameScores = JSON.parse(localStorage.getItem('allGameScores') || '{}');
+      
+      // إنشاء أو تحديث نتيجة اللعبة الحالية
+      const gameScore = {
+        id: gameId,
+        team1Name: team1Name,
+        team2Name: team2Name,
+        team1Score: team1Score,
+        team2Score: team2Score,
+        isCompleted: isCompleted,
+        lastUpdated: new Date().toISOString(),
+        usedQuestionsCount: usedQuestions.size,
+        totalQuestions: categories.length * values.length * 2,
+        progress: Math.round((usedQuestions.size / (categories.length * values.length * 2)) * 100),
+        holeUsed: holeUsed,
+        currentTurn: currentTurn
+      };
+
+      // حفظ نتيجة هذه اللعبة
+      allGameScores[gameId] = gameScore;
+      
+      // حفظ جميع النتائج
+      localStorage.setItem('allGameScores', JSON.stringify(allGameScores));
+      
+      console.log(`💾 تم حفظ نتيجة اللعبة ${gameId}: ${team1Name}(${team1Score}) ضد ${team2Name}(${team2Score})`);
+      console.log(`📊 إجمالي الألعاب المحفوظة: ${Object.keys(allGameScores).length}`);
+      
+      // إرسال إشارة تحديث لصفحة "ألعابي"
+      const gameScoreUpdateEvent = new CustomEvent('gameScoreUpdated', {
+        detail: {
+          gameId: gameId,
+          gameScore: gameScore,
+          action: 'saved'
+        }
+      });
+      window.dispatchEvent(gameScoreUpdateEvent);
+      console.log('📡 تم إرسال إشارة تحديث النقاط الفردية');
+      
+      return gameScore;
+    } catch (error) {
+      console.error('خطأ في حفظ نتيجة اللعبة:', error);
+      return null;
+    }
+  };
 
   // Function to save game state to localStorage
   const saveGameState = (team1Score = scoreLeft, team2Score = scoreRight) => {
@@ -126,10 +353,254 @@ export default function GameBoard() {
         gameData.gameInfo.team2Score = team2Score;
         gameData.gameInfo.holeUsed = holeUsed;
         gameData.gameInfo.currentTeamUsingHole = currentTeamUsingHole;
+        gameData.gameInfo.currentGameId = currentGameId; // حفظ معرف اللعبة
+        gameData.gameInfo.currentTurn = currentTurn; // حفظ الدور الحالي
+        gameData.gameInfo.lastPlayed = new Date().toISOString(); // وقت آخر لعب
+        
+        // حفظ الأسئلة المستخدمة في البيانات الكاملة
+        gameData.gameInfo.usedQuestions = Array.from(usedQuestions);
+        
+        // حفظ وسائل المساعدة المستخدمة (الاحتفاظ بالحالة الموجودة)
+        if (!gameData.gameInfo.lifelinesUsed) {
+          gameData.gameInfo.lifelinesUsed = {
+            call_friend: false,
+            fifty_fifty: false,
+            audience_poll: false
+          };
+        }
+        // لا نعيد تعيين وسائل المساعدة هنا - نحتفظ بحالتها الحالية
+        
+        // حفظ حالة اكتمال اللعبة
+        const totalQuestions = categories.length * values.length * 2; // 6 categories * 3 values * 2 sides = 36
+        gameData.gameInfo.isCompleted = usedQuestions.size >= totalQuestions;
+        gameData.gameInfo.progress = Math.round((usedQuestions.size / totalQuestions) * 100);
 
         // Save to localStorage
         localStorage.setItem("completeGameData", JSON.stringify(gameData));
+        
+        // حفظ نسخة احتياطية من الأسئلة المستخدمة في مفتاح منفصل
+        const storageKey = getUsedQuestionsKey();
+        localStorage.setItem(storageKey, JSON.stringify(Array.from(usedQuestions)));
+        
+        // حفظ نتيجة اللعبة الحالية في النظام الجديد
+        if (currentGameId) {
+          saveIndividualGameScore(currentGameId, team1Score, team2Score, gameData.gameInfo.isCompleted);
+        }
+        
+        console.log(`💾 تم حفظ حالة اللعبة: ${usedQuestions.size} سؤال مستخدم, التقدم: ${Math.round((usedQuestions.size / totalQuestions) * 100)}%`);
       }
+    }
+  };
+
+  // دالة لإنشاء لعبة جديدة في API (للألعاب العادية فقط)
+  const createGameInAPI = async () => {
+    // فحص إذا كانت اللعبة في وضع البطولة - لا ننشئ في API
+    if (isTournamentMode) {
+      console.log('وضع البطولة - لا يتم إنشاء لعبة في API');
+      return;
+    }
+
+    // فحص إذا كان هناك معرف لعبة موجود بالفعل
+    if (currentGameId) {
+      console.log(`لعبة موجودة بالفعل - معرف اللعبة: ${currentGameId}`);
+      return;
+    }
+
+    // فحص إذا كانت عملية إنشاء اللعبة جارية بالفعل
+    if (window.gameCreationInProgress) {
+      console.log('عملية إنشاء اللعبة جارية بالفعل - تجاهل الطلب');
+      return;
+    }
+
+    // فحص إذا كانت هناك لعبة مماثلة في localStorage
+    const existingGameKey = `game_${team1Name}_vs_${team2Name}`;
+    const reverseGameKey = `game_${team2Name}_vs_${team1Name}`;
+    
+    if (localStorage.getItem(existingGameKey) || localStorage.getItem(reverseGameKey)) {
+      console.log(`🚫 لعبة مماثلة موجودة في localStorage - لن ننشئ لعبة جديدة`);
+      return;
+    }
+
+    // وضع علامة أن عملية الإنشاء جارية
+    window.gameCreationInProgress = true;
+
+    // الحصول على الأسماء الحقيقية واسم البطولة من localStorage
+    let actualTeam1Name = team1Name;
+    let actualTeam2Name = team2Name;
+    let tournamentName = null;
+    
+    const completeGameData = localStorage.getItem("completeGameData");
+    if (completeGameData) {
+      try {
+        const gameData = JSON.parse(completeGameData);
+        if (gameData.gameInfo) {
+          actualTeam1Name = gameData.gameInfo.team1Name || team1Name;
+          actualTeam2Name = gameData.gameInfo.team2Name || team2Name;
+          tournamentName = gameData.gameInfo.gameName || null; // اسم البطولة/اللعبة
+        }
+      } catch (error) {
+        console.error('خطأ في قراءة بيانات اللعبة:', error);
+      }
+    }
+
+    console.log(`أسماء الفرق الحقيقية: ${actualTeam1Name} ضد ${actualTeam2Name}`);
+    console.log(`النقاط الحالية: ${actualTeam1Name}: ${scoreLeft}, ${actualTeam2Name}: ${scoreRight}`);
+    console.log(`اسم البطولة: ${tournamentName || 'لا يوجد'}`);
+
+    try {
+      const gameData = {
+        tournament_id: null, // لعبة عادية وليس بطولة
+        team_one_name: actualTeam1Name,
+        team_two_name: actualTeam2Name,
+        team_one_players_count: 1, // افتراضي
+        team_two_players_count: 1, // افتراضي
+        team_one_score: scoreLeft,
+        team_two_score: scoreRight,
+        is_completed: false,
+        status: 'in_progress',
+        call_friend: false,
+        fifty_fifty: false,
+        audience_poll: false,
+        tournament_name: tournamentName, // اسم البطولة/اللعبة
+        started_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
+      };
+
+      console.log('🎮 إنشاء لعبة جديدة في API:', gameData);
+        
+        // حفظ مفتاح اللعبة في localStorage لمنع التكرار
+        localStorage.setItem(existingGameKey, 'true');
+      const response = await gamesService.createGame(gameData);
+      
+      if (response && response.data && response.data.data) {
+        const newGameId = response.data.data.id;
+        console.log(`✅ تم إنشاء اللعبة بنجاح - معرف اللعبة: ${newGameId}`);
+        
+        // حفظ معرف اللعبة في localStorage
+        const completeGameData = localStorage.getItem("completeGameData");
+        if (completeGameData) {
+          const gameData = JSON.parse(completeGameData);
+          if (gameData.gameInfo) {
+            gameData.gameInfo.currentGameId = newGameId;
+            localStorage.setItem("completeGameData", JSON.stringify(gameData));
+          }
+        }
+        
+        // حفظ معرف اللعبة مع المفتاح
+        localStorage.setItem(`${existingGameKey}_id`, newGameId);
+        
+        console.log(`تم إنشاء اللعبة بنجاح - معرف اللعبة: ${newGameId}`);
+      }
+    } catch (error) {
+      console.error('خطأ في إنشاء اللعبة في API:', error);
+      // يمكن للعبة أن تستمر محلياً حتى لو فشل API
+    } finally {
+      // إزالة علامة أن عملية الإنشاء جارية
+      window.gameCreationInProgress = false;
+    }
+  };
+
+  // دالة للتحقق من انتهاء جميع الأسئلة
+  const checkIfAllQuestionsUsed = () => {
+    // إجمالي الأسئلة = 6 فئات × 3 أسئلة لكل فئة × 2 جانب = 36 سؤال
+    const totalQuestions = 36;
+    const usedCount = usedQuestions.size;
+    
+    console.log(`الأسئلة المستخدمة: ${usedCount} من ${totalQuestions}`);
+    
+    return usedCount >= totalQuestions;
+  };
+
+  // دالة لتحديث بيانات اللعبة في API
+  const updateGameInAPI = async (team1Score = scoreLeft, team2Score = scoreRight, isCompleted = false) => {
+    // فحص إذا كانت اللعبة في وضع البطولة أو لا يوجد معرف لعبة
+    if (isTournamentMode) {
+      console.log(`🏆 تجاهل تحديث API - وضع بطولة`);
+      return;
+    }
+    
+    if (!currentGameId) {
+      console.log(`⚠️ لا يوجد معرف لعبة - جرب إنشاء لعبة جديدة`);
+      await createGameInAPI();
+      return;
+    }
+
+    console.log(`🚀 تحديث النقاط في API - ${team1Name}: ${team1Score}, ${team2Name}: ${team2Score}`);
+
+    // التحقق التلقائي من انتهاء جميع الأسئلة
+    if (!isCompleted && checkIfAllQuestionsUsed()) {
+      isCompleted = true;
+      console.log('تم انتهاء جميع الأسئلة - وضع علامة اللعبة كمنتهية');
+    }
+
+    // تأكيد من إرسال النقاط بشكل صحيح
+    const finalTeam1Score = parseInt(team1Score) || 0;
+    const finalTeam2Score = parseInt(team2Score) || 0;
+    
+    // الحصول على أسماء الفرق الحقيقية من localStorage
+    let actualTeam1Name = team1Name;
+    let actualTeam2Name = team2Name;
+    
+    const completeGameData = localStorage.getItem("completeGameData");
+    if (completeGameData) {
+      try {
+        const gameData = JSON.parse(completeGameData);
+        if (gameData.gameInfo) {
+          actualTeam1Name = gameData.gameInfo.team1Name || team1Name;
+          actualTeam2Name = gameData.gameInfo.team2Name || team2Name;
+        }
+      } catch (error) {
+        console.error('خطأ في قراءة بيانات اللعبة:', error);
+      }
+    }
+    
+    // إرسال جميع البيانات المطلوبة حسب رسالة الخطأ
+    const updateData = {
+      team_one_name: actualTeam1Name || 'الفريق الأول',
+      team_two_name: actualTeam2Name || 'الفريق الثاني',
+      team_one_players_count: 1,
+      team_two_players_count: 1,
+      team_one_score: finalTeam1Score,
+      team_two_score: finalTeam2Score
+    };
+    
+    // إضافة بيانات اختيارية إذا انتهت اللعبة
+    if (isCompleted) {
+      updateData.is_completed = true;
+      updateData.status = 'completed';
+      updateData.completed_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    } else {
+      updateData.is_completed = false;
+      updateData.status = 'in_progress';
+    }
+
+    try {
+
+      console.log(`📊 النقاط المرسلة: فريق 1: ${finalTeam1Score}, فريق 2: ${finalTeam2Score}`);
+      console.log(`📦 تحديث اللعبة ${currentGameId} في API:`, updateData);
+      console.log(`🔄 حالة اللعبة: ${isCompleted ? 'منتهية' : 'جارية'}`);
+      console.log(`🎮 معرف اللعبة: ${currentGameId}`);
+      console.log(`🏆 وضع البطولة: ${isTournamentMode}`);
+      console.log(`📝 أسماء الفرق: ${actualTeam1Name} ضد ${actualTeam2Name}`);
+      console.log(`📝 أسماء من state: ${team1Name} ضد ${team2Name}`);
+      
+      const response = await gamesService.updateGame(currentGameId, updateData);
+      console.log('✅ تم تحديث اللعبة بنجاح في API');
+      console.log('📊 استجابة API:', response.data);
+      
+      return response;
+    } catch (error) {
+      console.error('❌ خطأ في تحديث اللعبة في API:', error.message);
+      console.error('❌ كود الخطأ:', error.response?.status);
+      console.error('❌ تفاصيل الخطأ:', error.response?.data);
+      console.error('❌ رسالة الخطأ:', error.response?.data?.message);
+      console.error('❌ الأخطاء التفصيلية:', error.response?.data?.errors);
+      console.error('❌ البيانات المرسلة:', updateData);
+      console.error('❌ URL الطلب:', error.config?.url);
+      console.error('❌ طريقة الطلب:', error.config?.method);
+      
+      // لا نرمي الخطأ للمستخدم - نترك اللعبة تعمل محلياً
+      // يمكن للعبة أن تستمر محلياً حتى لو فشل API
+      return null; // عدم رمي الخطأ
     }
   };
 
@@ -148,6 +619,90 @@ export default function GameBoard() {
     return usedQuestions.has(`${categoryId}-${points}-${side}`);
   };
 
+  // دالة لحفظ نتيجة اللعبة المنتهية في تاريخ الألعاب
+  const saveCompletedGameToHistory = () => {
+    try {
+      // الحصول على بيانات اللعبة الحالية
+      const completeGameData = localStorage.getItem("completeGameData");
+      let gameInfo = {};
+      
+      if (completeGameData) {
+        const gameData = JSON.parse(completeGameData);
+        gameInfo = gameData.gameInfo || {};
+      }
+
+      // إنشاء كائن اللعبة المنتهية
+      const completedGame = {
+        id: currentGameId || `local_${Date.now()}`,
+        tournament_id: null,
+        team_one_name: gameInfo.team1Name || team1Name || 'الفريق الأول',
+        team_two_name: gameInfo.team2Name || team2Name || 'الفريق الثاني',
+        team_one_score: scoreLeft,
+        team_two_score: scoreRight,
+        is_completed: true,
+        status: 'completed',
+        started_at: gameInfo.startedAt || new Date().toISOString(),
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        source: 'localStorage',
+        // بيانات إضافية
+        usedQuestions: Array.from(usedQuestions),
+        holeUsed: holeUsed,
+        currentTurn: currentTurn,
+        categories: categories || [],
+        winner: getWinner().name,
+        winnerScore: getWinner().score
+      };
+
+      // جلب تاريخ الألعاب الحالي
+      const gamesHistory = JSON.parse(localStorage.getItem('gamesHistory') || '[]');
+      
+      // فحص إذا كانت اللعبة موجودة بالفعل (تجنب التكرار)
+      const existingGameIndex = gamesHistory.findIndex(game => 
+        game.id === completedGame.id ||
+        (game.team_one_name === completedGame.team_one_name && 
+         game.team_two_name === completedGame.team_two_name &&
+         Math.abs(new Date(game.started_at) - new Date(completedGame.started_at)) < 60000) // نفس اللعبة خلال دقيقة
+      );
+
+      if (existingGameIndex !== -1) {
+        // تحديث اللعبة الموجودة
+        gamesHistory[existingGameIndex] = completedGame;
+        console.log('🔄 تم تحديث اللعبة في تاريخ الألعاب');
+      } else {
+        // إضافة لعبة جديدة
+        gamesHistory.unshift(completedGame); // إضافة في المقدمة (الأحدث أولاً)
+        console.log('➕ تم إضافة لعبة جديدة لتاريخ الألعاب');
+      }
+
+      // الاحتفاظ بآخر 50 لعبة فقط
+      if (gamesHistory.length > 50) {
+        gamesHistory.splice(50);
+      }
+
+      // حفظ تاريخ الألعاب المحدث
+      localStorage.setItem('gamesHistory', JSON.stringify(gamesHistory));
+      
+      console.log(`💾 تم حفظ نتيجة اللعبة في التاريخ: ${completedGame.team_one_name} (${completedGame.team_one_score}) ضد ${completedGame.team_two_name} (${completedGame.team_two_score})`);
+      console.log(`🏆 الفائز: ${completedGame.winner} بـ ${completedGame.winnerScore} نقطة`);
+      
+      // إرسال إشارة لتحديث صفحة "ألعابي"
+      const gameHistoryUpdateEvent = new CustomEvent('gameHistoryUpdated', {
+        detail: {
+          game: completedGame,
+          action: existingGameIndex !== -1 ? 'updated' : 'added'
+        }
+      });
+      window.dispatchEvent(gameHistoryUpdateEvent);
+      console.log('📡 تم إرسال إشارة تحديث تاريخ الألعاب');
+      
+      return completedGame;
+    } catch (error) {
+      console.error('خطأ في حفظ اللعبة المنتهية:', error);
+      return null;
+    }
+  };
+
   // دالة لتحديد السؤال كمستخدم
   const markQuestionAsUsed = (categoryId, points, side) => {
     const questionKey = `${categoryId}-${points}-${side}`;
@@ -159,11 +714,23 @@ export default function GameBoard() {
       const storageKey = getUsedQuestionsKey();
       localStorage.setItem(storageKey, JSON.stringify(Array.from(newSet)));
 
+      // تحديث اللعبة في API بعد كل سؤال (للتحقق من انتهاء اللعبة)
+      if (!isTournamentMode) {
+        setTimeout(() => {
+          updateGameInAPI();
+        }, 100);
+      }
+
       // فحص إذا كانت جميع الأسئلة قد انتهت
       const totalQuestions = categories.length * values.length * 2; // 6 categories * 3 values * 2 sides
       if (newSet.size >= totalQuestions) {
         setGameFinished(true);
         setShowWinnerModal(true);
+
+        // حفظ نتيجة اللعبة في تاريخ الألعاب فوراً
+        setTimeout(() => {
+          saveCompletedGameToHistory();
+        }, 500); // تأخير قصير للتأكد من تحديث جميع البيانات
 
         // إذا كانت مباراة بطولة، حفظ الفائز تلقائياً
         if (isTournamentMode && tournamentData) {
@@ -188,6 +755,11 @@ export default function GameBoard() {
               );
             }
           }, 100);
+        } else {
+          // للألعاب العادية - تحديث اللعبة كمنتهية في API
+          setTimeout(() => {
+            updateGameInAPI(scoreLeft, scoreRight, true);
+          }, 100);
         }
       }
 
@@ -208,6 +780,18 @@ export default function GameBoard() {
 
   // دالة لإعادة تعيين اللعبة
   const resetGame = () => {
+    // حفظ نتيجة اللعبة الحالية قبل إعادة التعيين (إذا لم تكن محفوظة بالفعل)
+    if (currentGameId && (scoreLeft > 0 || scoreRight > 0)) {
+      console.log('🎮 حفظ نتيجة اللعبة النهائية قبل بدء لعبة جديدة...');
+      saveIndividualGameScore(currentGameId, scoreLeft, scoreRight, true);
+      saveCompletedGameToHistory();
+    }
+
+    // إنشاء معرف جديد للعبة الجديدة
+    const newGameId = generateGameId();
+    setCurrentGameId(newGameId);
+    console.log(`🆕 تم إنشاء معرف لعبة جديد: ${newGameId}`);
+
     // حذف الأسئلة المستخدمة حسب نوع اللعبة
     const storageKey = getUsedQuestionsKey();
     localStorage.removeItem(storageKey);
@@ -219,16 +803,25 @@ export default function GameBoard() {
     setShowWinnerModal(false);
     setGameFinished(false);
 
-    // تحديث النقاط في localStorage
+    // تحديث البيانات في localStorage للعبة الجديدة
     const completeGameData = localStorage.getItem("completeGameData");
     if (completeGameData) {
       const gameData = JSON.parse(completeGameData);
       if (gameData.gameInfo) {
         gameData.gameInfo.team1Score = 0;
         gameData.gameInfo.team2Score = 0;
+        gameData.gameInfo.currentGameId = newGameId; // معرف اللعبة الجديدة
+        gameData.gameInfo.usedQuestions = [];
+        gameData.gameInfo.isCompleted = false;
+        gameData.gameInfo.progress = 0;
         localStorage.setItem("completeGameData", JSON.stringify(gameData));
       }
     }
+
+    // حفظ نتيجة اللعبة الجديدة (0-0) في النظام الجديد
+    saveIndividualGameScore(newGameId, 0, 0, false);
+
+    console.log('🔄 تم إعادة تعيين اللعبة - بدء لعبة جديدة بمعرف منفصل');
   };
 
   // دالة للتعامل مع انتهاء مباراة البطولة
@@ -306,8 +899,14 @@ export default function GameBoard() {
     setLoading(true);
 
     try {
-      // وضع علامة على السؤال كمستخدم فوراً عند الضغط عليه
-      markQuestionAsUsed(categoryId, points, side);
+      // إنشاء لعبة في API عند أول سؤال (إذا لم تكن موجودة)
+      if (!isTournamentMode && !currentGameId) {
+        console.log('إنشاء لعبة جديدة عند أول سؤال');
+        await createGameInAPI();
+      }
+
+      // لا نضع علامة هنا - سيتم وضعها في TheGame عند عرض الإجابة
+      // markQuestionAsUsed(categoryId, points, side);
 
       // تحديد الدور الحالي بناءً على الجانب المضغوط
       const currentTurn = side === "left" ? 1 : 2;
@@ -452,28 +1051,154 @@ export default function GameBoard() {
   const [gameFinished, setGameFinished] = useState(false);
   const [isTournamentMode, setIsTournamentMode] = useState(false);
   const [tournamentData, setTournamentData] = useState(null);
+  const [forceUpdate, setForceUpdate] = useState(0); // لإجبار إعادة عرض المكون
+  const [questionsLoaded, setQuestionsLoaded] = useState(false); // لتتبع حالة تحميل الأسئلة
+
+  // دالة قوية لإجبار تحديث الأسئلة المغمقة
+  const forceQuestionsUpdate = () => {
+    console.log('🔄 إجبار تحديث الأسئلة المغمقة...');
+    
+    let foundQuestions = false;
+    let allQuestions = new Set();
+    
+    // 1. تحميل من completeGameData
+    const completeGameData = localStorage.getItem("completeGameData");
+    if (completeGameData) {
+      try {
+        const gameData = JSON.parse(completeGameData);
+        if (gameData.gameInfo && gameData.gameInfo.usedQuestions && Array.isArray(gameData.gameInfo.usedQuestions)) {
+          gameData.gameInfo.usedQuestions.forEach(q => allQuestions.add(q));
+          console.log(`💾 تم تحميل ${gameData.gameInfo.usedQuestions.length} سؤال من completeGameData`);
+          foundQuestions = true;
+        }
+      } catch (error) {
+        console.error('خطأ في تحميل من completeGameData:', error);
+      }
+    }
+    
+    // 2. تحميل من المفتاح المنفصل
+    const storageKey = getUsedQuestionsKey();
+    const savedQuestions = localStorage.getItem(storageKey);
+    if (savedQuestions) {
+      try {
+        const questionsArray = JSON.parse(savedQuestions);
+        if (Array.isArray(questionsArray)) {
+          questionsArray.forEach(q => allQuestions.add(q));
+          console.log(`💾 تم دمج ${questionsArray.length} سؤال من ${storageKey}`);
+          foundQuestions = true;
+        }
+      } catch (error) {
+        console.error(`خطأ في تحميل من ${storageKey}:`, error);
+      }
+    }
+    
+    if (foundQuestions && allQuestions.size > 0) {
+      setUsedQuestions(allQuestions);
+      setQuestionsLoaded(true);
+      setForceUpdate(prev => prev + 1);
+      console.log(`✅ تم تحديث ${allQuestions.size} سؤال مغمق بنجاح!`);
+      console.log('📝 قائمة الأسئلة المغمقة:', Array.from(allQuestions));
+      
+      // فوراً بعد التحديث، إجبار إعادة عرض المكون
+      setTimeout(() => {
+        setUsedQuestions(new Set(allQuestions));
+        setForceUpdate(prev => prev + 1);
+      }, 50);
+      
+      return true;
+    } else {
+      console.log('⚠️ لم يتم العثور على أسئلة محفوظة');
+      setQuestionsLoaded(true);
+      return false;
+    }
+  };
 
   // دالة لتحميل الأسئلة المستخدمة حسب نوع اللعبة
   const loadUsedQuestions = () => {
+    console.log('🔄 بدء تحميل الأسئلة المستخدمة...');
+    
+    let loadedQuestions = new Set();
+    
+    // أولاً: محاولة التحميل من completeGameData
+    const completeGameData = localStorage.getItem("completeGameData");
+    if (completeGameData) {
+      try {
+        const gameData = JSON.parse(completeGameData);
+        if (gameData.gameInfo && gameData.gameInfo.usedQuestions) {
+          const questionsFromGameData = gameData.gameInfo.usedQuestions;
+          if (Array.isArray(questionsFromGameData)) {
+            questionsFromGameData.forEach(q => loadedQuestions.add(q));
+            console.log(`📝 تم تحميل ${questionsFromGameData.length} سؤال مستخدم من البيانات الكاملة`);
+          }
+        }
+      } catch (error) {
+        console.error('خطأ في تحميل الأسئلة من البيانات الكاملة:', error);
+      }
+    }
+    
+    // ثانياً: محاولة التحميل من المفتاح المنفصل كـ fallback
     const storageKey = getUsedQuestionsKey();
     const savedUsedQuestions = localStorage.getItem(storageKey);
-
     if (savedUsedQuestions) {
       try {
         const usedQuestionsArray = JSON.parse(savedUsedQuestions);
-        setUsedQuestions(new Set(usedQuestionsArray));
+        if (Array.isArray(usedQuestionsArray)) {
+          usedQuestionsArray.forEach(q => loadedQuestions.add(q));
+          console.log(`📝 تم دمج ${usedQuestionsArray.length} سؤال إضافي من المفتاح المنفصل`);
+        }
       } catch (error) {
-        setUsedQuestions(new Set());
+        console.error('خطأ في تحميل الأسئلة من المفتاح المنفصل:', error);
       }
-    } else {
-      setUsedQuestions(new Set());
     }
+    
+    setUsedQuestions(loadedQuestions);
+    console.log(`📝 إجمالي الأسئلة المستخدمة المحملة: ${loadedQuestions.size}`);
+    console.log(`📝 الأسئلة المستخدمة:`, Array.from(loadedQuestions));
+    
+    // إجبار إعادة عرض المكون لإظهار الأسئلة المغمقة
+    setForceUpdate(prev => prev + 1);
   };
 
   useEffect(() => {
     // تحميل الأسئلة المستخدمة بعد تحديد نوع اللعبة
     loadUsedQuestions();
   }, [isTournamentMode]); // إعادة التحميل عند تغيير نوع اللعبة
+  
+  // تحديث الواجهة عند تغيير الأسئلة المستخدمة
+  useEffect(() => {
+    console.log(`🔄 تم تحديث الأسئلة المستخدمة: ${usedQuestions.size} سؤال`);
+    if (usedQuestions.size > 0) {
+      console.log('📝 قائمة الأسئلة المغمقة:', Array.from(usedQuestions));
+    }
+  }, [usedQuestions, forceUpdate]);
+  
+  // مراقبة تغييرات localStorage وإجبار تحديث الأسئلة
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'completeGameData' || e.key === getUsedQuestionsKey()) {
+        console.log('💾 تغيير في localStorage - إجبار تحديث الأسئلة');
+        setTimeout(() => {
+          forceQuestionsUpdate();
+        }, 100);
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+  
+  // تحديث دوري لضمان عرض الأسئلة المغمقة
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!questionsLoaded) {
+        forceQuestionsUpdate();
+      }
+    }, 1000); // فحص كل ثانية
+    
+    return () => clearInterval(interval);
+  }, [questionsLoaded]);
 
   // Save hole state whenever it changes
   useEffect(() => {
@@ -481,6 +1206,14 @@ export default function GameBoard() {
       saveGameState();
     }
   }, [holeUsed, currentTeamUsingHole]);
+
+  // Save individual game scores whenever scores change
+  useEffect(() => {
+    if (currentGameId && (scoreLeft > 0 || scoreRight > 0)) {
+      console.log(`🎯 تغيير النقاط: ${team1Name}(${scoreLeft}) ضد ${team2Name}(${scoreRight})`);
+      saveIndividualGameScore(currentGameId, scoreLeft, scoreRight, false);
+    }
+  }, [scoreLeft, scoreRight, currentGameId, team1Name, team2Name]);
 
   // استقبال تغيير الدور من الناف بار (بدون تأثير على أي شيء آخر)
   useEffect(() => {
@@ -543,105 +1276,39 @@ export default function GameBoard() {
 
   // Load game data from localStorage on component mount and when returning from TheGame
   useEffect(() => {
-    const loadGameData = () => {
-      // أولاً: تحميل الأقسام المختارة من selectedItems
-      const selectedItems = localStorage.getItem("selectedItems");
-      if (selectedItems) {
-        try {
-          const selectedCategories = JSON.parse(selectedItems);
-          if (selectedCategories && selectedCategories.length === 6) {
-            const loadedCategories = selectedCategories.map((cat, index) => ({
-              id: index + 1,
-              title: cat.name || cat.title,
-              img:
-                cat.image ||
-                cat.img ||
-                "images/zGame_All_Pages-_3_-removebg-preview.png",
-            }));
-            setCategories(loadedCategories);
-          }
-        } catch (error) {}
-      }
-
-      // ثانياً: تحميل بيانات اللعبة من completeGameData
-      const completeGameData = localStorage.getItem("completeGameData");
-      if (completeGameData) {
-        const gameData = JSON.parse(completeGameData);
-
-        // تحميل الأقسام من completeGameData إذا لم توجد في selectedItems
-        if (
-          !selectedItems &&
-          gameData.categories &&
-          gameData.categories.length === 6
-        ) {
-          const loadedCategories = gameData.categories.map((cat, index) => ({
-            id: index + 1,
-            title: cat.title || cat.name,
-            img:
-              cat.img ||
-              cat.image ||
-              "images/zGame_All_Pages-_3_-removebg-preview.png",
-          }));
-          setCategories(loadedCategories);
-        }
-
-        // Load team names and scores from localStorage
-        if (gameData.gameInfo) {
-          const updates = {};
-
-          // فحص إذا كانت اللعبة في وضع البطولة
-          if (gameData.gameInfo.isTournamentMode) {
-            setIsTournamentMode(true);
-            setTournamentData(gameData.gameInfo.tournamentData);
-            updates.isTournamentMode = true;
-            updates.tournamentData = gameData.gameInfo.tournamentData;
-          }
-
-          if (gameData.gameInfo.team1Name) {
-            setTeam1Name(gameData.gameInfo.team1Name);
-            updates.team1Name = gameData.gameInfo.team1Name;
-          }
-          if (gameData.gameInfo.team2Name) {
-            setTeam2Name(gameData.gameInfo.team2Name);
-            updates.team2Name = gameData.gameInfo.team2Name;
-          }
-
-          // Load scores - always update to latest values
-          if (gameData.gameInfo.team1Score !== undefined) {
-            setScoreLeft(gameData.gameInfo.team1Score);
-            updates.team1Score = gameData.gameInfo.team1Score;
-          }
-          if (gameData.gameInfo.team2Score !== undefined) {
-            setScoreRight(gameData.gameInfo.team2Score);
-            updates.team2Score = gameData.gameInfo.team2Score;
-          }
-
-          // Load hole state
-          if (gameData.gameInfo.holeUsed) {
-            setHoleUsed(gameData.gameInfo.holeUsed);
-            updates.holeUsed = gameData.gameInfo.holeUsed;
-          }
-          if (gameData.gameInfo.currentTeamUsingHole) {
-            setCurrentTeamUsingHole(gameData.gameInfo.currentTeamUsingHole);
-            updates.currentTeamUsingHole =
-              gameData.gameInfo.currentTeamUsingHole;
-          }
-
-          // Load current turn
-          if (gameData.gameInfo.currentTurn) {
-            setCurrentTurn(gameData.gameInfo.currentTurn);
-            updates.currentTurn = gameData.gameInfo.currentTurn;
-          }
-        }
-      } else {
-      }
-    };
-
     loadGameData();
+    
+    // تحديثات متعددة لضمان ظهور الأسئلة المغمقة
+    setTimeout(() => {
+      console.log('🔄 تحديث فوري 1');
+      forceQuestionsUpdate();
+    }, 50);
+    
+    setTimeout(() => {
+      console.log('🔄 تحديث فوري 2');
+      forceQuestionsUpdate();
+    }, 200);
+    
+    setTimeout(() => {
+      console.log('🔄 تحديث فوري 3');
+      forceQuestionsUpdate();
+    }, 500);
+    
+    setTimeout(() => {
+      console.log('🔄 تحديث فوري 4');
+      forceQuestionsUpdate();
+    }, 1000);
 
     // Listen for focus events to reload data when returning from other pages
     const handleFocus = () => {
       loadGameData();
+      // استخدام الدالة القوية عند العودة للصفحة
+      setTimeout(() => {
+        forceQuestionsUpdate();
+      }, 100);
+      setTimeout(() => {
+        forceQuestionsUpdate();
+      }, 300);
     };
 
     window.addEventListener("focus", handleFocus);
@@ -751,8 +1418,13 @@ export default function GameBoard() {
               className="minus"
               onClick={() => {
                 const newScore = scoreLeft - 100;
+                console.log(`🔻 فريق 1 ناقص: ${scoreLeft} -> ${newScore}`);
                 setScoreLeft(newScore);
                 saveScoresToLocalStorage(newScore, scoreRight);
+
+                // تحديث النتيجة في API للألعاب العادية
+                console.log(`🚀 إرسال نقاط لـ API: ${newScore}, ${scoreRight}`);
+                updateGameInAPI(newScore, scoreRight);
 
                 // إرسال تحديث النتائج فوراً
                 const scoresUpdateEvent = new CustomEvent("scoresUpdated", {
@@ -771,8 +1443,13 @@ export default function GameBoard() {
               className="plus"
               onClick={() => {
                 const newScore = scoreLeft + 100;
+                console.log(`🔺 فريق 1 زائد: ${scoreLeft} -> ${newScore}`);
                 setScoreLeft(newScore);
                 saveScoresToLocalStorage(newScore, scoreRight);
+
+                // تحديث النتيجة في API للألعاب العادية
+                console.log(`🚀 إرسال نقاط لـ API: ${newScore}, ${scoreRight}`);
+                updateGameInAPI(newScore, scoreRight);
 
                 // إرسال تحديث النتائج فوراً
                 const scoresUpdateEvent = new CustomEvent("scoresUpdated", {
@@ -836,8 +1513,13 @@ export default function GameBoard() {
               className="minus"
               onClick={() => {
                 const newScore = scoreRight - 100;
+                console.log(`🔻 فريق 2 ناقص: ${scoreRight} -> ${newScore}`);
                 setScoreRight(newScore);
                 saveScoresToLocalStorage(scoreLeft, newScore);
+
+                // تحديث النتيجة في API للألعاب العادية
+                console.log(`🚀 إرسال نقاط لـ API: ${scoreLeft}, ${newScore}`);
+                updateGameInAPI(scoreLeft, newScore);
 
                 // إرسال تحديث النتائج فوراً
                 const scoresUpdateEvent = new CustomEvent("scoresUpdated", {
@@ -856,8 +1538,13 @@ export default function GameBoard() {
               className="plus"
               onClick={() => {
                 const newScore = scoreRight + 100;
+                console.log(`🔺 فريق 2 زائد: ${scoreRight} -> ${newScore}`);
                 setScoreRight(newScore);
                 saveScoresToLocalStorage(scoreLeft, newScore);
+
+                // تحديث النتيجة في API للألعاب العادية
+                console.log(`🚀 إرسال نقاط لـ API: ${scoreLeft}, ${newScore}`);
+                updateGameInAPI(scoreLeft, newScore);
 
                 // إرسال تحديث النتائج فوراً
                 const scoresUpdateEvent = new CustomEvent("scoresUpdated", {

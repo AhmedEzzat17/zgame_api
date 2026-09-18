@@ -7,7 +7,7 @@ const GameNavbar = () => {
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [gameName, setGameName] = useState("لعبة المعلومات");
+  const [gameName, setGameName] = useState("");
   const [currentTeam, setCurrentTeam] = useState("الفريق الأول");
   const [team1Name, setTeam1Name] = useState("الفريق الأول");
   const [team2Name, setTeam2Name] = useState("الفريق الثاني");
@@ -31,6 +31,25 @@ const GameNavbar = () => {
     // تنظيف بيانات البطولة عند الضغط على "العب"
     localStorage.removeItem("currentTournamentMatch");
     localStorage.removeItem("tournamentData");
+    
+    // تنظيف معرف اللعبة السابقة لضمان إنشاء لعبة جديدة
+    const completeGameData = localStorage.getItem("completeGameData");
+    if (completeGameData) {
+      try {
+        const gameData = JSON.parse(completeGameData);
+        if (gameData.gameInfo) {
+          delete gameData.gameInfo.currentGameId; // إزالة معرف اللعبة السابقة
+          localStorage.setItem("completeGameData", JSON.stringify(gameData));
+        }
+      } catch (error) {
+        console.error('خطأ في تنظيف معرف اللعبة:', error);
+      }
+    }
+    
+    // تنظيف علامة إنشاء اللعبة
+    window.gameCreationInProgress = false;
+    
+    console.log('تم تنظيف بيانات البطولة ومعرف اللعبة السابقة من gameNavbar');
     setIsOpen(false);
   };
 
@@ -83,7 +102,7 @@ const GameNavbar = () => {
       if (completeGameData) {
         const gameData = JSON.parse(completeGameData);
         if (gameData.gameInfo) {
-          const gameName = gameData.gameInfo.gameName || "لعبة المعلومات";
+          const gameName = gameData.gameInfo.gameName || "";
           const team1 = gameData.gameInfo.team1Name || "الفريق الأول";
           const team2 = gameData.gameInfo.team2Name || "الفريق الثاني";
           const turn = gameData.gameInfo.currentTurn || 1;
@@ -351,7 +370,7 @@ const GameNavbar = () => {
     if (completeGameData) {
       const gameData = JSON.parse(completeGameData);
       if (gameData.gameInfo) {
-        const gameName = gameData.gameInfo.gameName || "لعبة المعلومات";
+        const gameName = gameData.gameInfo.gameName || "";
         const team1 = gameData.gameInfo.team1Name || "الفريق الأول";
         const team2 = gameData.gameInfo.team2Name || "الفريق الثاني";
         const turn = gameData.gameInfo.currentTurn || 1;

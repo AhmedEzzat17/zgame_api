@@ -3,7 +3,20 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-family: "Mada", sans-serif !important;
   /* border: 1px solid red; */
+}
+
+html,
+body {
+  /* font-family: "Mada", sans-serif !important; */
+  overflow-x: hidden !important;
+  direction: rtl;
+}
+/* أرجع خط Font Awesome للأيقونات */
+i, .fa, .fas, .far, .fab {
+  font-family: "Font Awesome 6 Free" !important;
+  font-weight: 900 !important; /* مهم لبعض الأيقونات */
 }
 
 /* انيميشن للحفرة المفعلة */
@@ -26,11 +39,7 @@
   animation: holeGlow 2s ease-in-out infinite;
 }
 
-html,
-body {
-  overflow-x: hidden !important;
-  direction: rtl;
-}
+
 
 /* #F95C32
 red
@@ -243,7 +252,7 @@ orange */
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   min-width: 200px;
   overflow: hidden;
-  font-family: inherit;
+  /* font-family: inherit; */
 }
 
 /* ====== الهيدر (الاسم + الايميل) ====== */
@@ -3978,7 +3987,7 @@ label {
 .profile-container {
   min-height: 100vh;
   padding: 20px;
-  font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  /* font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; */
   direction: rtl;
 }
 
@@ -4375,7 +4384,7 @@ label {
 .mygames11-container {
   min-height: 100vh;
   padding: 20px;
-  font-family: 'Cairo', sans-serif;
+  /* font-family: 'Cairo', sans-serif; */
   direction: rtl;
 }
 

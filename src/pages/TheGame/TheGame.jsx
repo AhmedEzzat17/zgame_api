@@ -23,6 +23,8 @@ function TheGame() {
   const [doubleAnswerUsed, setDoubleAnswerUsed] = useState(false);
   const [showStartBtn, setShowStartBtn] = useState(true);
   const [callFriendUsed, setCallFriendUsed] = useState(false);
+  const [fiftyFiftyUsed, setFiftyFiftyUsed] = useState(false);
+  const [audiencePollUsed, setAudiencePollUsed] = useState(false);
 
   const [questionData, setQuestionData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,11 +45,28 @@ function TheGame() {
   const [holeTeam, setHoleTeam] = useState("");
   const [holeSide, setHoleSide] = useState("");
 
-  // Load selected answers from localStorage
+  // Load selected answers and lifelines from localStorage
   useEffect(() => {
     const savedAnswers = localStorage.getItem("selectedAnswers");
     if (savedAnswers) {
       setSelectedAnswers(JSON.parse(savedAnswers));
+    }
+    
+    // تحميل وسائل المساعدة المستخدمة
+    const completeGameData = localStorage.getItem("completeGameData");
+    if (completeGameData) {
+      try {
+        const gameData = JSON.parse(completeGameData);
+        if (gameData.gameInfo && gameData.gameInfo.lifelinesUsed) {
+          const lifelines = gameData.gameInfo.lifelinesUsed;
+          setCallFriendUsed(lifelines.call_friend || false);
+          setFiftyFiftyUsed(lifelines.fifty_fifty || false);
+          setAudiencePollUsed(lifelines.audience_poll || false);
+          console.log('🎯 تم تحميل وسائل المساعدة:', lifelines);
+        }
+      } catch (error) {
+        console.error('خطأ في تحميل وسائل المساعدة:', error);
+      }
     }
   }, []);
 
@@ -55,6 +74,34 @@ function TheGame() {
   const saveSelectedAnswers = (answers) => {
     localStorage.setItem("selectedAnswers", JSON.stringify(answers));
     setSelectedAnswers(answers);
+  };
+  
+  // دالة لحفظ وسائل المساعدة في localStorage
+  const saveLifelinesUsed = (lifelineType, isUsed = true) => {
+    const completeGameData = localStorage.getItem("completeGameData");
+    if (completeGameData) {
+      try {
+        const gameData = JSON.parse(completeGameData);
+        if (!gameData.gameInfo.lifelinesUsed) {
+          gameData.gameInfo.lifelinesUsed = {
+            call_friend: false,
+            fifty_fifty: false,
+            audience_poll: false
+          };
+        }
+        
+        // تحديث حالة وسيلة المساعدة المحددة
+        gameData.gameInfo.lifelinesUsed[lifelineType] = isUsed;
+        
+        // حفظ البيانات في localStorage
+        localStorage.setItem("completeGameData", JSON.stringify(gameData));
+        
+        console.log(`🎯 تم حفظ استخدام ${lifelineType}: ${isUsed}`);
+        console.log('🎯 حالة جميع وسائل المساعدة:', gameData.gameInfo.lifelinesUsed);
+      } catch (error) {
+        console.error('خطأ في حفظ وسائل المساعدة:', error);
+      }
+    }
   };
 
   // Handle option selection
@@ -318,6 +365,12 @@ function TheGame() {
 
   const handleShowAnswer = () => {
     setShowAnswer(true);
+    
+    // وضع علامة على السؤال كمستخدم عند عرض الإجابة (ليس عند دخول السؤال)
+    const urlParams = new URLSearchParams(window.location.search);
+    const side = urlParams.get('side') || 'left';
+    markQuestionAsUsed(categoryId, value, side);
+    console.log(`📝 تم وضع علامة على السؤال ${categoryId}-${value}-${side} عند عرض الإجابة`);
   };
 
   // Function to save scores to localStorage
@@ -693,7 +746,13 @@ function TheGame() {
           <div className="help-popup">
             <button
               className="help-box"
-              onClick={() => setShowCallFriend(true)}
+              onClick={() => {
+                if (!callFriendUsed) {
+                  setShowCallFriend(true);
+                  setCallFriendUsed(true);
+                  saveLifelinesUsed('call_friend', true);
+                }
+              }}
               disabled={callFriendUsed}
               style={{
                 backgroundColor: callFriendUsed ? "#ccc" : "",
@@ -707,17 +766,45 @@ function TheGame() {
             </button>
             <button
               className="help-box"
-              onClick={() => setDoubleAnswerUsed(true)}
-              disabled={doubleAnswerUsed}
+              onClick={() => {
+                if (!fiftyFiftyUsed) {
+                  setFiftyFiftyUsed(true);
+                  saveLifelinesUsed('fifty_fifty', true);
+                  // هنا يمكن إضافة منطق إخفاء إجابتين من الخيارات
+                  alert('تم استخدام وسيلة 50/50 - سيتم إخفاء إجابتين خاطئتين');
+                }
+              }}
+              disabled={fiftyFiftyUsed}
               style={{
-                backgroundColor: doubleAnswerUsed ? "#ccc" : "",
-                cursor: doubleAnswerUsed ? "not-allowed" : "pointer",
+                backgroundColor: fiftyFiftyUsed ? "#ccc" : "",
+                cursor: fiftyFiftyUsed ? "not-allowed" : "pointer",
               }}
             >
               <div className="icon">
                 <i className="fas fa-hand-peace"></i>
               </div>
-              <p>{doubleAnswerUsed ? "تم الاستخدام" : "جاوب إجابتين"}</p>
+              <p>{fiftyFiftyUsed ? "تم الاستخدام" : "50/50"}</p>
+            </button>
+            <button
+              className="help-box"
+              onClick={() => {
+                if (!audiencePollUsed) {
+                  setAudiencePollUsed(true);
+                  saveLifelinesUsed('audience_poll', true);
+                  // هنا يمكن إضافة منطق عرض نتائج استطلاع الجمهور
+                  alert('تم استخدام وسيلة استطلاع الجمهور');
+                }
+              }}
+              disabled={audiencePollUsed}
+              style={{
+                backgroundColor: audiencePollUsed ? "#ccc" : "",
+                cursor: audiencePollUsed ? "not-allowed" : "pointer",
+              }}
+            >
+              <div className="icon">
+                <i className="fas fa-users"></i>
+              </div>
+              <p>{audiencePollUsed ? "تم الاستخدام" : "استطلاع الجمهور"}</p>
             </button>
           </div>
         )}

@@ -277,14 +277,14 @@ const QuestionCreate = () => {
         response = await submitData(formDataToSend, true);
       } else {
         // Without file - JSON
-        baseData.correct_answer = correctAnswerFormatted;
+        questionData.correct_answer = correctAnswerFormatted;
         
         // If there's a question_media_url, include it
         if (formData.question_media_url) {
-          baseData.question_media_url = formData.question_media_url;
+          questionData.question_media_url = formData.question_media_url;
         }
         
-        response = await submitData(baseData, false);
+        response = await submitData(questionData, false);
       }
 
       toast.success("تمت إضافة السؤال بنجاح");

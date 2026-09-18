@@ -96,14 +96,14 @@ const Profile = ({ user }) => {
     
     setIsLoading(true);
     setMessage({ type: '', text: '' });
+
+    const requestData = {
+      old_password: passwordData.currentPassword,
+      new_password: passwordData.newPassword,
+      new_password_confirmation: passwordData.confirmPassword
+    };
     
     try {
-      const requestData = {
-        old_password: passwordData.currentPassword,
-        new_password: passwordData.newPassword,
-        new_password_confirmation: passwordData.confirmPassword
-      };
-      
       await userService.resetPassword(requestData);
       
       setMessage({ type: 'success', text: 'تم تغيير كلمة المرور بنجاح' });

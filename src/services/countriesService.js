@@ -14,7 +14,7 @@ class CountriesService extends ApiFunctions {
   // للبيانات بدون صور (JSON) - إضافة هذه الدالة
   createJSON = async (data) => {
     try {
-      const response = await apiClient.post(this.endpoint, data, {
+      const response = await this.apiClient.post(this.endpoint, data, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
